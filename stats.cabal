@@ -1,0 +1,34 @@
+name:                stats
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/unification-com/stats#readme
+license:             MIT
+license-file:        LICENSE
+author:              Indika Piyasena
+maintainer:          indika@unification.com
+copyright:           2020 Unification Foundation
+category:            Data
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable stats
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       
+      base
+    , bytestring
+    , hakyll
+    , process
+    , diagrams
+    , diagrams-lib
+    , diagrams-contrib
+    , diagrams-svg
+    , diagrams-core
+    , diagrams-html5
+    , postgresql-simple
+    , text
+    , time
+    , SVGFonts
