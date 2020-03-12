@@ -5,7 +5,7 @@ module Config
 
 import qualified Data.Text          as T
 import           Data.Text.Encoding (encodeUtf8)
-import           System.Environment (getEnv)
+import           System.Environment (getEnvironment)
 
 accounts =
   [ "und1nkh2dteta8drxntqp646sr6vz74lt9w9yc60pd"
@@ -15,6 +15,11 @@ accounts =
   ]
 
 connectionString = do
-  env <- getEnv "bits_env"
-  if env == "warp" then return (encodeUtf8 . T.pack $ "postgresql://indika:password@localhost:5432/warp")
-  else return (encodeUtf8 . T.pack $ "undefined")
+  vars <- getEnvironment
+  if elem "bits_env" (fst <$> vars)
+    then return
+           (encodeUtf8 . T.pack $
+            "postgresql://indika:password@localhost:5432/warp")
+    else return
+           (encodeUtf8 . T.pack $
+            "postgresql://postgres:password@localhost:8432/postgres")
