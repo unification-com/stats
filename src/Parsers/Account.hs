@@ -3,36 +3,28 @@ module Parsers.Account
   , supply
   ) where
 
+import           Parsers.Common (curljq, restEndpoint)
 import           System.IO      (hGetContents)
 import           System.Process
 
-restEndpoint :: String -> String
-restEndpoint segment = "https://rest-testnet.unification.io/" ++ segment
-
-curljq :: String -> String -> IO String
-curljq url query = do
-  (_, Just hOut, _, hProc) <-
-    createProcess ((shell (shell_cmd)) {std_out = CreatePipe})
-  exitCode <- waitForProcess hProc
-  output <- hGetContents hOut
-  return $ head (lines output)
-  where
-    shell_cmd = "curl -s " ++ url ++ " | jq -r '" ++ query ++ "'"
+data Validator =
+  Validator String Integer Double Double Bool
+  deriving (Show)
 
 queryMainchainAccount account = do
   val <-
     curljq
       (restEndpoint "auth/accounts/" ++ account)
       ".result.account.value.coins[0].amount"
-  if val == "null"
+  if head val == "null"
     then return "0"
-    else return val
+    else return $ head val
 
 -- TODO: This could be optimized
 supply = do
   amount <- curljq supplyEndpoint ".result.amount"
   locked <- curljq supplyEndpoint ".result.locked"
   total <- curljq supplyEndpoint ".result.total"
-  return $ (amount, locked, total)
+  return $ (head amount, head locked, head total)
   where
     supplyEndpoint = restEndpoint "supply/total"
