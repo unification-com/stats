@@ -38,4 +38,5 @@ makeQuery = do
   let d = map (\x -> (fst x - snd x) `div` 1000000000) c
   return $ d
 
-report = makeQuery
+report :: IO String
+report = show <$> makeQuery
