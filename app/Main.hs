@@ -1,8 +1,5 @@
 module Main where
 
-import Report (report)
+import Sampler (sample)
 
-main = do
-    print "Generating report"
-    ret <- report
-    print (ret)
+main = sample

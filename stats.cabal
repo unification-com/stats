@@ -15,8 +15,12 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Report
-  other-modules:       Config
+  exposed-modules:     Report, Sampler
+  other-modules:
+      Config
+    , Parsers.Account
+    , Parsers.Common
+    , Parsers.Validator
   build-depends:       
       base
     , bytestring
