@@ -20,7 +20,6 @@ library
   build-depends:       
       base
     , bytestring
-    , hakyll
     , process
     , diagrams
     , diagrams-lib
@@ -34,8 +33,17 @@ library
     , SVGFonts
   default-language:    Haskell2010
 
+executable stats-site
+  hs-source-dirs:      app
+  main-is:             Site.hs
+  build-depends:
+      base
+    , hakyll
+    , stats
+  ghc-options:      -threaded
+  default-language: Haskell2010
 
-executable stats
+executable stats-collector
   hs-source-dirs:      app
   main-is:             Main.hs
   default-language:    Haskell2010
