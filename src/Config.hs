@@ -4,6 +4,7 @@ module Config
   , connectionString
   ) where
 
+import           Data.List          (elemIndex)
 import qualified Data.Text          as T
 import           Data.Text.Encoding (encodeUtf8)
 import           System.Environment (getEnvironment)
@@ -26,12 +27,18 @@ validators =
   , "undvalcons170cp2v6pnwefvayxtrjh6u3kftprhd9ud5jy0c"
   ]
 
+has vars = case hasCell of
+  Nothing -> Nothing
+  (Just x) -> snd <$> Just (vars !! x)
+  where
+    hasCell = elemIndex "bits_env" (fst <$> vars)
+
 connectionString = do
   vars <- getEnvironment
-  if elem "bits_env" (fst <$> vars)
-    then return
-           (encodeUtf8 . T.pack $
-            "postgresql://indika:password@localhost:5432/warp")
-    else return
-           (encodeUtf8 . T.pack $
-            "postgresql://postgres:password@localhost:8432/postgres")
+  case has vars of
+    Nothing -> return (encode "postgresql://postgres:password@localhost:8432/postgres")
+    (Just x) -> case x of
+      "warp" -> return (encode "postgresql://indika:password@localhost:5432/warp")
+      "aws" -> return (encode "postgresql://postgres:password@localhost:5432/postgres")
+  where
+    encode = encodeUtf8 . T.pack
