@@ -6,6 +6,7 @@ module Sampler
 
 import           Config                     (accounts, connectionString)
 import           Parsers.Account            (queryMainchainAccount, supply)
+import           Parsers.Validator          (sampleValidators)
 
 import           Database.PostgreSQL.Simple
 
@@ -39,3 +40,4 @@ queryAndInject account = do
 sample = do
   mapM_ queryAndInject accounts
   injectSupply
+  sampleValidators
