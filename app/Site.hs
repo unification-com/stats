@@ -2,11 +2,12 @@
 
 import           Data.Monoid (mappend)
 import           Hakyll
-import           Report      (report)
+import           Report      (tableTotalSupply24H, tableAccounts24H)
 
 main :: IO ()
 main = do
-  ret <- report
+  dataAccounts24H <- tableAccounts24H
+  dataTotalSupply24H <- tableTotalSupply24H
   hakyll $ do
     match "css/*" $ do
       route idRoute
@@ -15,7 +16,8 @@ main = do
       route idRoute
       compile $ do
         let indexCtx =
-              constField "title" "Stats" `mappend` constField "data" ret `mappend`
+              constField "title" "Stats" `mappend` constField "dataAccounts24H" dataAccounts24H `mappend` 
+              constField "dataTotalSupply24H" dataTotalSupply24H `mappend` 
               defaultContext
         getResourceBody >>= applyAsTemplate indexCtx >>=
           loadAndApplyTemplate "templates/default.html" indexCtx >>=
