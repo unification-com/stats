@@ -7,7 +7,7 @@ module Report
   ) where
 
 import           Control.Monad                   (forM_)
-import           Data.Text
+import           Data.Text                       as T
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
 import           Database.PostgreSQL.Simple
@@ -17,7 +17,7 @@ import           Text.Blaze.Html5                as H
 import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (accounts, connectionString)
-import           Parsers.Validator               (readValidator, Validator(..))
+import           Parsers.Validator               (Validator (..), readValidator)
 
 obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
 obtainSample c metric feature (a, b) = do
@@ -54,6 +54,20 @@ truncate' x n = (fromIntegral (floor (x * t))) / t
 undConvert :: Integral a => a -> Double
 undConvert n = truncate' (fromIntegral n / 1000000000) 2
 
+makeURL :: String -> Html
+makeURL acc = a ! href (stringValue x) $ (toHtml acc)
+  where
+    x = "https://explorer-testnet.unification.io/account/" ++ acc
+
+makeValidatorURL :: String -> Text -> Html
+makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
+  where
+    x =
+      T.concat
+        [ T.pack "https://explorer-testnet.unification.io/validator/"
+        , T.pack acc
+        ]
+
 metricDX metric feature = do
   now <- window
   cs <- connectionString
@@ -70,7 +84,7 @@ tableAccounts24H = do
   accResults <- accountDX
   let tableHead = thead (th "Account Number" >> th "Amount in UND")
   let lns =
-        Prelude.zip (toHtml <$> accounts) (toHtml . undConvert <$> accResults)
+        Prelude.zip (makeURL <$> accounts) (toHtml . undConvert <$> accResults)
   return $
     renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
   where
@@ -99,15 +113,27 @@ tableValidators24H = do
   vxs <- mapM (\x -> readValidator conn x) vs
   let totalShares = sum (Parsers.Validator.shares <$> vxs)
   print $ totalShares
-  let tableHead = thead (th "Moniker" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
+  let tableHead =
+        thead
+          (th "Moniker" >> th "Delegator Shares" >> th "Power %" >>
+           th "Commission %")
   return $
-    renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ (\x -> c totalShares x) vxs)))
+    renderHtml
+      (table ! class_ "statstable" $
+       (tableHead >> (mapM_ (\x -> c totalShares x) vxs)))
   where
     shr v = truncate' (Parsers.Validator.shares v / 1000000000) 3
-    pow totalShares v = truncate' (Parsers.Validator.shares v / totalShares * 100) 2
+    pow totalShares v =
+      truncate' (Parsers.Validator.shares v / totalShares * 100) 2
     comm v = truncate' (Parsers.Validator.commission v * 100) 2
-    c totalShares v = tr (td (toHtml (Parsers.Validator.moniker v)) >> td (toHtml (shr v)) >> td (toHtml (pow totalShares v)) >> td (toHtml (comm v)))
-
+    monn v =
+      (makeValidatorURL
+         (Parsers.Validator.address v)
+         (Parsers.Validator.moniker v))
+    c totalShares v =
+      tr
+        (td (monn v) >> td (toHtml (shr v)) >> td (toHtml (pow totalShares v)) >>
+         td (toHtml (comm v)))
 
 test = do
   now <- window
