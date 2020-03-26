@@ -18,6 +18,7 @@ accounts =
   , "und10ta4pvss0wg6t9yhq7k6y7lhk7v95uqg7p22nu"
   , "und1m4y8cxqhvmqltwyehtdyk3ymgwd854j7wmvc5k"
   , "und1mtxp3jh5ytygjfpfyx4ell495zc2m4k8ft8uly" -- tokenswap account
+  , "und12zns8tfm0g2rskl4f9zg2hr9n53agkyvtftngs" -- wrkchain account
   ]
 
 validators =
