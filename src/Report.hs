@@ -44,7 +44,7 @@ validators c (a, b) = do
 window :: IO (UTCTime, UTCTime)
 window = do
   now <- getCurrentTime
-  return $ (addUTCTime (-3600 * 24 * 15) now, now)
+  return $ (addUTCTime (-3600 * 24) now, now)
 
 truncate' :: Double -> Int -> Double
 truncate' x n = (fromIntegral (floor (x * t))) / t
