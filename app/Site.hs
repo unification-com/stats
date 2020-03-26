@@ -9,6 +9,9 @@ main = do
   dataAccounts24H <- tableAccounts24H
   dataTotalSupply24H <- tableTotalSupply24H
   hakyll $ do
+    match "images/*" $ do
+        route   idRoute
+        compile copyFileCompiler
     match "css/*" $ do
       route idRoute
       compile compressCssCompiler
