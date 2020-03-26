@@ -1,10 +1,18 @@
+@import "https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900,900italic&subset=latin,cyrillic";
+
 html {
   font-size: 62.5%;
 }
 
 body {
-  font-size: 1.6rem;
-  color: #000;
+  font-family: 'RobotoDraft', 'Roboto', 'Helvetica Neue, Helvetica, Arial', sans-serif;
+  font-style: normal;
+  font-weight: 300;
+  font-size: 1.4rem;
+  line-height: 2rem;
+  letter-spacing: 0.01rem;
+  color: #212121;
+  background-color: #f5f5f5;
 }
 
 header {
@@ -50,6 +58,41 @@ article .header {
   color: #000;
   text-decoration: none;
 }
+
+.statstable {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 2rem;
+  text-align: center;
+
+  padding: 0.4rem;
+  line-height: 2.4rem;
+}
+
+
+.statstable td:first-child {
+  text-align: left;
+}
+
+.statstable td:last-child {
+  text-align: right;
+}
+
+.statstable td {
+  background-color: white;
+  padding: 0.4rem;
+}
+
+.statstable thead {
+  background-color: white;
+  font-weight: 400;
+  color: #757575;
+  vertical-align: bottom;
+  border-bottom: 1px solid rgba(0,0,0,.12);
+
+}
+
+
 
 @media (max-width: 319px) {
   body {
@@ -139,3 +182,5 @@ article .header {
     font-size: 1.8rem;
   }
 }
+
+

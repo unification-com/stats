@@ -1,42 +1,83 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Report
-  ( report
+  ( tableTotalSupply24H
+  , tableAccounts24H
   ) where
 
-import           Config                     (accounts, connectionString)
-import           Data.Time.Clock            (UTCTime, addUTCTime)
+import           Config                          (accounts, connectionString)
+import           Data.Time.Clock                 (UTCTime, addUTCTime,
+                                                  getCurrentTime)
 import           Database.PostgreSQL.Simple
 
-start = "2020-03-08 09:37:25 UTC"
-
-mid = "2020-03-08 13:23:25 UTC"
+import           Control.Monad                   (forM_)
+import           Text.Blaze.Html.Renderer.String (renderHtml)
+import           Text.Blaze.Html5                as H
+import           Text.Blaze.Html5.Attributes     as A
 
 obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
 obtainSample c metric feature (a, b) = do
   a <-
     query
       c
-      "SELECT sample FROM stats.metrics WHERE metric = ? AND feature = ? AND utc_date > ? and utc_date < ? LIMIT 1;" $
-    [metric, feature, show a, show b] :: IO [Only Int]
-  return $ fromOnly $ head a
+      "SELECT a.sample - b.sample FROM \
+      \(SELECT sample FROM stats.metrics WHERE metric = ? and feature = ? AND \
+      \utc_date > ? AND utc_date < ? ORDER BY utc_date DESC LIMIT 1) a CROSS JOIN \
+      \(SELECT sample FROM stats.metrics WHERE metric = ? and feature = ? AND utc_date > ? AND utc_date < ? \
+      \ORDER BY utc_date ASC LIMIT 1) b" $
+    [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Int]
+  return $ fromOnly $ Prelude.head a
 
-window :: String -> (UTCTime, UTCTime)
-window point = (a, b)
-  where
-    ts = (read point) :: UTCTime
-    a = addUTCTime (-1 * d) ts
-    b = addUTCTime (1 * d) ts
-    d = 10
+window :: IO (UTCTime, UTCTime)
+window = do
+  now <- getCurrentTime
+  return $ (addUTCTime (-3600 * 24 * 1) now, now)
 
-makeQuery = do
+truncate' :: Double -> Int -> Double
+truncate' x n = (fromIntegral (floor (x * t))) / t
+    where t = 10^n
+
+undConvert n = truncate' (fromIntegral n / 1000000000) 2
+
+metricDX metric feature = do
+  now <- window
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  a <- mapM (\x -> obtainSample conn "account" x $ window start) accounts
-  b <- mapM (\x -> obtainSample conn "account" x $ window mid) accounts
-  let c = zip b a
-  let d = map (\x -> (fst x - snd x) `div` 1000000000) c
-  return $ d
+  obtainSample conn metric feature now
 
-report :: IO String
-report = show <$> makeQuery
+accountDX = do
+  now <- window
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  mapM (\x -> obtainSample conn "account" x now) accounts
+
+tableAccounts24H = do
+  accResults <- accountDX
+  let tableHead = thead (th "Account Number" >> th "Amount in UND")
+  let lns = zip (toHtml <$> accounts) (toHtml . undConvert <$> accResults)
+  return $
+    renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
+  where
+    c ln = tr (td (fst ln) >> td (snd ln))
+
+tableTotalSupply24H = do
+  supplyAmountChange <- metricDX "supply" "amount"
+  supplyTotalChange <- metricDX "supply" "total"
+  supplyLockedChange <- metricDX "supply" "locked"
+  let tableHead = thead (th "Total" >> th "Amount in UND")
+  let lns =
+        [ ("Supply Amount Change", (toHtml . undConvert) supplyAmountChange)
+        , ("Supply Total Change", (toHtml . undConvert) supplyTotalChange)
+        , ("Supply Locked Change", (toHtml . undConvert) supplyLockedChange)
+        ]
+  return $
+    renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
+  where
+    c ln = tr (td (fst ln) >> td (snd ln))
+
+test' = do
+  now <- window
+  print $ show now
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  obtainSample conn "supply" "total" $ (now)

@@ -23,6 +23,7 @@ library
     , Parsers.Validator
   build-depends:       
       base
+    , blaze-html
     , bytestring
     , process
     , diagrams
