@@ -1,6 +1,5 @@
 module Config
   ( accounts
-  , validators
   , connectionString
   ) where
 
@@ -19,13 +18,6 @@ accounts =
   , "und1m4y8cxqhvmqltwyehtdyk3ymgwd854j7wmvc5k"
   , "und1mtxp3jh5ytygjfpfyx4ell495zc2m4k8ft8uly" -- tokenswap account
   , "und12zns8tfm0g2rskl4f9zg2hr9n53agkyvtftngs" -- wrkchain account
-  ]
-
-validators =
-  [ "undvalcons1zahztaascyqtv0ym8gkcsmvnaugl7whg8slsux"
-  , "undvalcons1wuf5pvrwpld77skgjvt20j2xr367ycm0f55avf"
-  , "undvalcons1hnhzr5xfhd7uv32fvens59qda8t86jywd88prz"
-  , "undvalcons170cp2v6pnwefvayxtrjh6u3kftprhd9ud5jy0c"
   ]
 
 has vars = case hasCell of
