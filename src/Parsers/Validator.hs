@@ -5,6 +5,7 @@ module Parsers.Validator
   ) where
 
 import           Data.Int                           (Int64)
+import           Data.Text                          (Text, pack)
 
 import           Config                             (accounts, connectionString)
 import           Parsers.Common                     (curljq, restEndpoint)
@@ -14,6 +15,7 @@ import           Database.PostgreSQL.Simple.FromRow
 import           Database.PostgreSQL.Simple.ToField
 import           Database.PostgreSQL.Simple.ToRow
 
+
 data Validator =
   Validator
     { address    :: String
@@ -21,6 +23,7 @@ data Validator =
     , shares     :: Double
     , commission :: Double
     , jailed     :: Bool
+    , moniker    :: Text
     }
   deriving (Show)
 
@@ -31,13 +34,14 @@ instance ToRow Validator where
     , toField (shares t)
     , toField (commission t)
     , toField (jailed t)
+    , toField (moniker t)
     ]
 
 addValidator :: Connection -> Validator -> IO Int64
 addValidator c validator =
   execute
     c
-    "INSERT INTO stats.validators (operator_address, tokens, delegator_shares, rate, jailed) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO stats.validators (operator_address, tokens, delegator_shares, rate, jailed, moniker) VALUES (?, ?, ?, ?, ?, ?)"
     validator
 
 group :: Int -> [a] -> [[a]]
@@ -51,7 +55,7 @@ validators = do
   ret <-
     curljq
       validatorEndpoint
-      ".result[] | .operator_address,.tokens,.delegator_shares,.commission.commission_rates.rate,.jailed"
+      ".result[] | .operator_address,.tokens,.delegator_shares,.commission.commission_rates.rate,.jailed,.description.moniker"
   let v =
         map
           (\x ->
@@ -62,8 +66,9 @@ validators = do
                (read (x !! 3) :: Double)
                (if ((x !! 4) == "true")
                   then True
-                  else False))
-          (group 5 ret)
+                  else False)
+               (pack (x !! 5)))
+          (group 6 ret)
   return $ v
   where
     validatorEndpoint = restEndpoint "staking/validators"
