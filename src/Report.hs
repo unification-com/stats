@@ -33,6 +33,12 @@ window = do
   now <- getCurrentTime
   return $ (addUTCTime (-3600 * 24 * 1) now, now)
 
+truncate' :: Double -> Int -> Double
+truncate' x n = (fromIntegral (floor (x * t))) / t
+    where t = 10^n
+
+undConvert n = truncate' (fromIntegral n / 1000000000) 2
+
 metricDX metric feature = do
   now <- window
   cs <- connectionString
@@ -47,8 +53,8 @@ accountDX = do
 
 tableAccounts24H = do
   accResults <- accountDX
-  let tableHead = thead (th "Account Number" >> th "Amount in nUND")
-  let lns = zip (toHtml <$> accounts) (toHtml <$> accResults)
+  let tableHead = thead (th "Account Number" >> th "Amount in UND")
+  let lns = zip (toHtml <$> accounts) (toHtml . undConvert <$> accResults)
   return $
     renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
   where
@@ -58,11 +64,11 @@ tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
   supplyTotalChange <- metricDX "supply" "total"
   supplyLockedChange <- metricDX "supply" "locked"
-  let tableHead = thead (th "Total" >> th "Amount in nUND")
+  let tableHead = thead (th "Total" >> th "Amount in UND")
   let lns =
-        [ ("Supply Amount Change", toHtml supplyAmountChange)
-        , ("Supply Total Change", toHtml supplyTotalChange)
-        , ("Supply Locked Change", toHtml supplyLockedChange)
+        [ ("Supply Amount Change", (toHtml . undConvert) supplyAmountChange)
+        , ("Supply Total Change", (toHtml . undConvert) supplyTotalChange)
+        , ("Supply Locked Change", (toHtml . undConvert) supplyLockedChange)
         ]
   return $
     renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
