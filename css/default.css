@@ -59,13 +59,39 @@ article .header {
   text-decoration: none;
 }
 
+.statstable {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 2rem;
+  text-align: center;
+
+  padding: 0.4rem;
+  line-height: 2.4rem;
+}
+
+
+.statstable td:first-child {
+  text-align: left;
+}
+
+.statstable td:last-child {
+  text-align: right;
+}
+
 .statstable td {
   background-color: white;
+  padding: 0.4rem;
 }
 
 .statstable thead {
   background-color: white;
+  font-weight: 400;
+  color: #757575;
+  vertical-align: bottom;
+  border-bottom: 1px solid rgba(0,0,0,.12);
+
 }
+
 
 
 @media (max-width: 319px) {
@@ -156,3 +182,5 @@ article .header {
     font-size: 1.8rem;
   }
 }
+
+
