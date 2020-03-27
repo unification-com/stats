@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Parsers.Validator
-  ( sampleValidators
+  ( sampleValidators, readValidator, Validator(..)
   ) where
 
 import           Data.Int                           (Int64)
@@ -15,7 +15,6 @@ import           Database.PostgreSQL.Simple.FromRow
 import           Database.PostgreSQL.Simple.ToField
 import           Database.PostgreSQL.Simple.ToRow
 
-
 data Validator =
   Validator
     { address    :: String
@@ -26,6 +25,9 @@ data Validator =
     , moniker    :: Text
     }
   deriving (Show)
+
+instance FromRow Validator where
+  fromRow = Validator <$> field <*> field <*> field <*> field <*> field  <*> field
 
 instance ToRow Validator where
   toRow t =
@@ -43,6 +45,13 @@ addValidator c validator =
     c
     "INSERT INTO stats.validators (operator_address, tokens, delegator_shares, rate, jailed, moniker) VALUES (?, ?, ?, ?, ?, ?)"
     validator
+
+readValidator :: Connection -> String -> IO Validator
+readValidator c operatorAddress = do
+  a <- query
+    c
+    "SELECT operator_address, tokens, delegator_shares, rate, jailed, moniker from stats.validators WHERE operator_address = ? ORDER BY utc_date DESC LIMIT 1;" $ Only operatorAddress
+  return $ Prelude.head a
 
 group :: Int -> [a] -> [[a]]
 group _ [] = []
@@ -72,6 +81,12 @@ validators = do
   return $ v
   where
     validatorEndpoint = restEndpoint "staking/validators"
+
+
+test = do
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  readValidator conn "undvaloper12t657d878j97c3qn55r4zwx3smmwd3rxj953ku"
 
 sampleValidators = do
   v <- validators

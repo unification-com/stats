@@ -3,17 +3,21 @@
 module Report
   ( tableTotalSupply24H
   , tableAccounts24H
+  , tableValidators24H
   ) where
 
-import           Config                          (accounts, connectionString)
+import           Control.Monad                   (forM_)
+import           Data.Text                       as T
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
 import           Database.PostgreSQL.Simple
 
-import           Control.Monad                   (forM_)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H
 import           Text.Blaze.Html5.Attributes     as A
+
+import           Config                          (accounts, connectionString)
+import           Parsers.Validator               (Validator (..), readValidator)
 
 obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
 obtainSample c metric feature (a, b) = do
@@ -28,16 +32,41 @@ obtainSample c metric feature (a, b) = do
     [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Int]
   return $ fromOnly $ Prelude.head a
 
+validators :: Connection -> (UTCTime, UTCTime) -> IO [String]
+validators c (a, b) = do
+  a <-
+    query
+      c
+      "SELECT DISTINCT operator_address from stats.validators WHERE utc_date > ? AND utc_date < ?;" $
+    [show a, show b] :: IO [Only String]
+  return $ fromOnly <$> a
+
 window :: IO (UTCTime, UTCTime)
 window = do
   now <- getCurrentTime
-  return $ (addUTCTime (-3600 * 24 * 1) now, now)
+  return $ (addUTCTime (-3600 * 24) now, now)
 
 truncate' :: Double -> Int -> Double
 truncate' x n = (fromIntegral (floor (x * t))) / t
-    where t = 10^n
+  where
+    t = 10 ^ n
 
+undConvert :: Integral a => a -> Double
 undConvert n = truncate' (fromIntegral n / 1000000000) 2
+
+makeURL :: String -> Html
+makeURL acc = a ! href (stringValue x) $ (toHtml acc)
+  where
+    x = "https://explorer-testnet.unification.io/account/" ++ acc
+
+makeValidatorURL :: String -> Text -> Html
+makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
+  where
+    x =
+      T.concat
+        [ T.pack "https://explorer-testnet.unification.io/validator/"
+        , T.pack acc
+        ]
 
 metricDX metric feature = do
   now <- window
@@ -54,7 +83,8 @@ accountDX = do
 tableAccounts24H = do
   accResults <- accountDX
   let tableHead = thead (th "Account Number" >> th "Amount in UND")
-  let lns = zip (toHtml <$> accounts) (toHtml . undConvert <$> accResults)
+  let lns =
+        Prelude.zip (makeURL <$> accounts) (toHtml . undConvert <$> accResults)
   return $
     renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
   where
@@ -75,9 +105,40 @@ tableTotalSupply24H = do
   where
     c ln = tr (td (fst ln) >> td (snd ln))
 
-test' = do
+tableValidators24H = do
+  now <- window
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  vs <- validators conn now
+  vxs <- mapM (\x -> readValidator conn x) vs
+  let totalShares = sum (Parsers.Validator.shares <$> vxs)
+  print $ totalShares
+  let tableHead =
+        thead
+          (th "Moniker" >> th "Delegator Shares" >> th "Power %" >>
+           th "Commission %")
+  return $
+    renderHtml
+      (table ! class_ "statstable" $
+       (tableHead >> (mapM_ (\x -> c totalShares x) vxs)))
+  where
+    shr v = truncate' (Parsers.Validator.shares v / 1000000000) 3
+    pow totalShares v =
+      truncate' (Parsers.Validator.shares v / totalShares * 100) 2
+    comm v = truncate' (Parsers.Validator.commission v * 100) 2
+    monn v =
+      (makeValidatorURL
+         (Parsers.Validator.address v)
+         (Parsers.Validator.moniker v))
+    c totalShares v =
+      tr
+        (td (monn v) >> td (toHtml (shr v)) >> td (toHtml (pow totalShares v)) >>
+         td (toHtml (comm v)))
+
+test = do
   now <- window
   print $ show now
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  obtainSample conn "supply" "total" $ (now)
+  vs <- validators conn now
+  mapM (\x -> readValidator conn x) vs

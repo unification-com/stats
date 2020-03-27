@@ -1,5 +1,6 @@
 module Parsers.Account
   ( queryMainchainAccount
+  , queryRewards
   , supply
   ) where
 
@@ -19,6 +20,15 @@ queryMainchainAccount account = do
   if head val == "null"
     then return "0"
     else return $ head val
+
+queryRewards account = do
+  val <-
+    curljq
+      (restEndpoint "distribution/delegators/" ++ account ++ "/rewards")
+      ".result.total[0].amount"
+  if head val == "null"
+    then return 0
+    else return $ (read (head val) :: Float)
 
 -- TODO: This could be optimized
 supply = do

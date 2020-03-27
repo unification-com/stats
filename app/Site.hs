@@ -2,11 +2,12 @@
 
 import           Data.Monoid (mappend)
 import           Hakyll
-import           Report      (tableTotalSupply24H, tableAccounts24H)
+import           Report      (tableTotalSupply24H, tableAccounts24H, tableValidators24H)
 
 main :: IO ()
 main = do
   dataAccounts24H <- tableAccounts24H
+  dataValidators24H <- tableValidators24H
   dataTotalSupply24H <- tableTotalSupply24H
   hakyll $ do
     match "images/*" $ do
@@ -20,6 +21,7 @@ main = do
       compile $ do
         let indexCtx =
               constField "title" "Stats" `mappend` constField "dataAccounts24H" dataAccounts24H `mappend` 
+              constField "dataValidators24H" dataValidators24H `mappend` 
               constField "dataTotalSupply24H" dataTotalSupply24H `mappend` 
               defaultContext
         getResourceBody >>= applyAsTemplate indexCtx >>=

@@ -5,7 +5,7 @@ module Sampler
   ) where
 
 import           Config                     (accounts, connectionString)
-import           Parsers.Account            (queryMainchainAccount, supply)
+import           Parsers.Account            (queryMainchainAccount, queryRewards, supply)
 import           Parsers.Validator          (sampleValidators)
 
 import           Database.PostgreSQL.Simple
@@ -13,10 +13,18 @@ import           Database.PostgreSQL.Simple
 insertMetric =
   "INSERT INTO stats.metrics (metric, feature, sample) VALUES (?, ?, ?);"
 
-inject account nund = do
+insertMetricF =
+  "INSERT INTO stats.metricsf (metric, feature, sample) VALUES (?, ?, ?);"
+
+inject metric account nund = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetric $ ["account", account, nund]
+  execute conn insertMetric $ [metric, account, nund]
+
+injectF metric account sample = do
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  execute conn insertMetricF $ [metric, account, show sample]
 
 injectSupply = do
   cs <- connectionString
@@ -34,8 +42,11 @@ mark str = do
 
 queryAndInject account = do
   balance <- queryMainchainAccount account
-  inject account balance
+  inject "account" account balance
   print $ account ++ ": " ++ balance
+  rewards <- queryRewards account
+  injectF "rewards" account rewards
+  print $ account ++ ": " ++ show rewards
 
 sample = do
   mapM_ queryAndInject accounts
