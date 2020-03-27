@@ -18,6 +18,9 @@ accounts =
   , "und1m4y8cxqhvmqltwyehtdyk3ymgwd854j7wmvc5k"
   , "und1mtxp3jh5ytygjfpfyx4ell495zc2m4k8ft8uly" -- tokenswap account
   , "und12zns8tfm0g2rskl4f9zg2hr9n53agkyvtftngs" -- wrkchain account
+  , "und10xpk56etf9s7efezvlu3qu5rg9djfm979cu4ax" -- MediaRallyAWS2020
+  , "und12t657d878j97c3qn55r4zwx3smmwd3rxenc6k6" -- BidiPass
+  , "und1duyhqzcgrzjy9y2yvueur2h3e2yqxhjl3jq2zl" -- Yellow.com
   ]
 
 has vars = case hasCell of
