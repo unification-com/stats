@@ -19,6 +19,7 @@ import           Text.Blaze.Html5.Attributes     as A
 import           Config                          (accounts, connectionString)
 import           Parsers.Validator               (Validator (..), readValidator)
 
+
 obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
 obtainSample c metric feature (a, b) = do
   a <-
@@ -31,6 +32,21 @@ obtainSample c metric feature (a, b) = do
       \ORDER BY utc_date ASC LIMIT 1) b" $
     [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Int]
   return $ fromOnly $ Prelude.head a
+
+obtainSampleF :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Double
+obtainSampleF c metric feature (a, b) = do
+  a <-
+    query
+      c
+      "SELECT a.sample - b.sample FROM \
+      \(SELECT sample FROM stats.metricsf WHERE metric = ? and feature = ? AND \
+      \utc_date > ? AND utc_date < ? ORDER BY utc_date DESC LIMIT 1) a CROSS JOIN \
+      \(SELECT sample FROM stats.metricsf WHERE metric = ? and feature = ? AND utc_date > ? AND utc_date < ? \
+      \ORDER BY utc_date ASC LIMIT 1) b" $
+    [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Double]
+  return $ fromOnly $ Prelude.head a
+
+
 
 validators :: Connection -> (UTCTime, UTCTime) -> IO [String]
 validators c (a, b) = do
@@ -74,21 +90,18 @@ metricDX metric feature = do
   conn <- connectPostgreSQL cs
   obtainSample conn metric feature now
 
-accountDX = do
-  now <- window
-  cs <- connectionString
-  conn <- connectPostgreSQL cs
-  mapM (\x -> obtainSample conn "account" x now) accounts
 
 tableAccounts24H = do
-  accResults <- accountDX
-  let tableHead = thead (th "Account Number" >> th "Amount in UND")
-  let lns =
-        Prelude.zip (makeURL <$> accounts) (toHtml . undConvert <$> accResults)
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  accResults <- mapM (\x -> obtainSample conn "account" x now) accounts
+  rewardResults <- mapM (\x -> obtainSampleF conn "rewards" x now) accounts
+  let tableHead = thead (th "Account Number" >> th "Balance change in UND" >> th "Accrued rewards")
+  let xns = Prelude.zip3 (makeURL <$> accounts) (toHtml . undConvert <$> accResults) (toHtml <$> rewardResults)
+  let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
   return $
-    renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
-  where
-    c ln = tr (td (fst ln) >> td (snd ln))
+    renderHtml (table ! class_ "statstable" $ (tableHead >> rows))
+
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
@@ -115,7 +128,7 @@ tableValidators24H = do
   print $ totalShares
   let tableHead =
         thead
-          (th "Moniker" >> th "Delegator Shares" >> th "Power %" >>
+          (th "EV" >> th "Delegator Shares" >> th "Power %" >>
            th "Commission %")
   return $
     renderHtml
@@ -140,5 +153,4 @@ test = do
   print $ show now
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  vs <- validators conn now
-  mapM (\x -> readValidator conn x) vs
+  obtainSampleF conn "rewards" "und10xpk56etf9s7efezvlu3qu5rg9djfm979cu4ax" now
