@@ -124,7 +124,6 @@ tableValidators24H = do
   vs <- validators conn now
   vxs <- mapM (\x -> readValidator conn x) vs
   let totalShares = sum (Parsers.Validator.shares <$> vxs)
-  print $ totalShares
   let tableHead =
         thead
           (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
@@ -145,10 +144,3 @@ tableValidators24H = do
       tr
         (td (monn v) >> td (toHtml (shr v)) >> td (toHtml (pow totalShares v)) >>
          td (toHtml (comm v)))
-
-test = do
-  now <- window
-  print $ show now
-  cs <- connectionString
-  conn <- connectPostgreSQL cs
-  obtainSampleF conn "rewards" "und10xpk56etf9s7efezvlu3qu5rg9djfm979cu4ax" now
