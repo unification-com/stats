@@ -8,10 +8,6 @@ import           Parsers.Common (curljq, restEndpoint)
 import           System.IO      (hGetContents)
 import           System.Process
 
-data Validator =
-  Validator String Integer Double Double Bool
-  deriving (Show)
-
 queryMainchainAccount account = do
   val <-
     curljq
