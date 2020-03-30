@@ -126,13 +126,15 @@ tableValidators24H = do
   vs <- validators conn now
   vxs <- mapM (\x -> readValidator conn x) vs
   let totalShares = sum (Parsers.Validator.shares <$> vxs)
+  let totalSharesStr = toHtml $ undConvertF $ totalShares
   let tableHead =
         thead
           (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
+  let totals = tr (td "Total" >> td totalSharesStr >> td "100.00" >> td "N/A")
   return $
     renderHtml
       (table ! class_ "statstable" $
-       (tableHead >> (mapM_ (\x -> c totalShares x) vxs)))
+       (tableHead >> (mapM_ (\x -> c totalShares x) vxs)) >> totals)
   where
     shr v = showFFloat (Just 2) (Parsers.Validator.shares v / 1000000000) ""
     pow totalShares v =
