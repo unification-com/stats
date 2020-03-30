@@ -89,19 +89,21 @@ metricDX metric feature = do
 tableAccounts24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
-  accResults <- mapM (\x -> obtainSample conn "account" x now) accounts
-  rewardResults <- mapM (\x -> obtainSampleF conn "rewards" x now) accounts
+  balance <- mapM (\x -> obtainSample conn "account" x now) accounts
+  accruedRewards <- mapM (\x -> obtainSampleF conn "rewards" x now) accounts
+  let totalBalance = toHtml $ undConvert $ sum balance
+  let totalRewards = toHtml $ undConvertF $ sum accruedRewards
   let tableHead =
         thead
-          (th "Account Number" >> th "Balance change in UND" >>
-           th "Accrued rewards in UND")
+          (th "Account Number" >> th "Balance change" >> th "Accrued rewards")
   let xns =
         Prelude.zip3
           (makeURL <$> accounts)
-          (toHtml . undConvert <$> accResults)
-          ((\x -> toHtml (undConvertF x)) <$> rewardResults)
+          (toHtml . undConvert <$> balance)
+          ((\x -> toHtml (undConvertF x)) <$> accruedRewards)
   let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
-  return $ renderHtml (table ! class_ "statstable" $ (tableHead >> rows))
+  let totals = tr (td "Total" >> td totalBalance >> td totalRewards)
+  return $ renderHtml (table ! class_ "statstable" $ (tableHead >> rows >> totals))
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
