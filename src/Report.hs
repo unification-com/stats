@@ -11,6 +11,7 @@ import           Data.Text                       as T
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
 import           Database.PostgreSQL.Simple
+import           Numeric                         (showFFloat)
 
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H
@@ -18,7 +19,6 @@ import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (accounts, connectionString)
 import           Parsers.Validator               (Validator (..), readValidator)
-
 
 obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
 obtainSample c metric feature (a, b) = do
@@ -33,7 +33,8 @@ obtainSample c metric feature (a, b) = do
     [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Int]
   return $ fromOnly $ Prelude.head a
 
-obtainSampleF :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Double
+obtainSampleF ::
+     Connection -> String -> String -> (UTCTime, UTCTime) -> IO Double
 obtainSampleF c metric feature (a, b) = do
   a <-
     query
@@ -45,8 +46,6 @@ obtainSampleF c metric feature (a, b) = do
       \ORDER BY utc_date ASC LIMIT 1) b" $
     [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Double]
   return $ fromOnly $ Prelude.head a
-
-
 
 validators :: Connection -> (UTCTime, UTCTime) -> IO [String]
 validators c (a, b) = do
@@ -62,13 +61,11 @@ window = do
   now <- getCurrentTime
   return $ (addUTCTime (-3600 * 24) now, now)
 
-truncate' :: Double -> Int -> Double
-truncate' x n = (fromIntegral (floor (x * t))) / t
-  where
-    t = 10 ^ n
+undConvert :: Integral a => a -> String
+undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
 
-undConvert :: Integral a => a -> Double
-undConvert n = truncate' (fromIntegral n / 1000000000) 2
+undConvertF :: RealFloat a => a -> String
+undConvertF n = showFFloat (Just 2) (n / 1000000000) ""
 
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
@@ -86,22 +83,25 @@ makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
 
 metricDX metric feature = do
   now <- window
-  cs <- connectionString
-  conn <- connectPostgreSQL cs
+  conn <- connectionString >>= connectPostgreSQL
   obtainSample conn metric feature now
-
 
 tableAccounts24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
   accResults <- mapM (\x -> obtainSample conn "account" x now) accounts
   rewardResults <- mapM (\x -> obtainSampleF conn "rewards" x now) accounts
-  let tableHead = thead (th "Account Number" >> th "Balance change in UND" >> th "Accrued rewards")
-  let xns = Prelude.zip3 (makeURL <$> accounts) (toHtml . undConvert <$> accResults) (toHtml <$> rewardResults)
+  let tableHead =
+        thead
+          (th "Account Number" >> th "Balance change in UND" >>
+           th "Accrued rewards in UND")
+  let xns =
+        Prelude.zip3
+          (makeURL <$> accounts)
+          (toHtml . undConvert <$> accResults)
+          ((\x -> toHtml (undConvertF x)) <$> rewardResults)
   let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
-  return $
-    renderHtml (table ! class_ "statstable" $ (tableHead >> rows))
-
+  return $ renderHtml (table ! class_ "statstable" $ (tableHead >> rows))
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
@@ -120,25 +120,23 @@ tableTotalSupply24H = do
 
 tableValidators24H = do
   now <- window
-  cs <- connectionString
-  conn <- connectPostgreSQL cs
+  conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> readValidator conn x) vs
   let totalShares = sum (Parsers.Validator.shares <$> vxs)
   print $ totalShares
   let tableHead =
         thead
-          (th "EV" >> th "Delegator Shares" >> th "Power %" >>
-           th "Commission %")
+          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
   return $
     renderHtml
       (table ! class_ "statstable" $
        (tableHead >> (mapM_ (\x -> c totalShares x) vxs)))
   where
-    shr v = truncate' (Parsers.Validator.shares v / 1000000000) 3
+    shr v = showFFloat (Just 2) (Parsers.Validator.shares v / 1000000000) ""
     pow totalShares v =
-      truncate' (Parsers.Validator.shares v / totalShares * 100) 2
-    comm v = truncate' (Parsers.Validator.commission v * 100) 2
+      showFFloat (Just 2) (Parsers.Validator.shares v / totalShares * 100) ""
+    comm v = showFFloat (Just 2) (Parsers.Validator.commission v * 100) ""
     monn v =
       (makeValidatorURL
          (Parsers.Validator.address v)
