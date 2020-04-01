@@ -1,6 +1,8 @@
 module Parsers.Account
   ( queryMainchainAccount
   , queryRewards
+  , queryValidatorRewards
+  , queryValidatorOutstandingRewards
   , supply
   ) where
 
@@ -22,6 +24,24 @@ queryRewards account = do
     curljq
       (restEndpoint "distribution/delegators/" ++ account ++ "/rewards")
       ".result.total[0].amount"
+  if head val == "null"
+    then return 0
+    else return $ (read (head val) :: Float)
+
+queryValidatorRewards account = do
+  val <-
+    curljq
+      (restEndpoint "distribution/validators/" ++ account ++ "/rewards")
+      ".result[0].amount"
+  if head val == "null"
+    then return 0
+    else return $ (read (head val) :: Float)
+
+queryValidatorOutstandingRewards account = do
+  val <-
+    curljq
+      (restEndpoint "distribution/validators/" ++ account ++ "/outstanding_rewards")
+      ".result[0].amount"
   if head val == "null"
     then return 0
     else return $ (read (head val) :: Float)

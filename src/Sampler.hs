@@ -5,7 +5,10 @@ module Sampler
   ) where
 
 import           Config                     (accounts, connectionString)
-import           Parsers.Account            (queryMainchainAccount, queryRewards, supply)
+import           Parsers.Account            (queryMainchainAccount,
+                                             queryRewards,
+                                             queryValidatorOutstandingRewards,
+                                             queryValidatorRewards, supply)
 import           Parsers.Validator          (sampleValidators)
 
 import           Database.PostgreSQL.Simple
@@ -40,7 +43,7 @@ mark str = do
   execute conn "INSERT INTO stats.markers (marker) VALUES (?);" $
     [str :: String]
 
-queryAndInject account = do
+queryAndInjectAccountDetails account = do
   balance <- queryMainchainAccount account
   inject "account" account balance
   print $ account ++ ": " ++ balance
@@ -48,7 +51,16 @@ queryAndInject account = do
   injectF "rewards" account rewards
   print $ account ++ ": " ++ show rewards
 
+queryAndInjectValidatorDetails validatorAccount = do
+  rewards <- queryValidatorRewards validatorAccount
+  injectF "rewards_validator" validatorAccount rewards
+  print $ validatorAccount ++ ": " ++ show rewards
+  rewardsOutstanding <- queryValidatorOutstandingRewards validatorAccount
+  injectF "rewards_outstanding_validator" validatorAccount rewardsOutstanding
+  print $ validatorAccount ++ ": " ++ show rewardsOutstanding
+
 sample = do
-  mapM_ queryAndInject accounts
+  mapM_ queryAndInjectAccountDetails accounts
   injectSupply
-  sampleValidators
+  vs <- sampleValidators
+  mapM_ queryAndInjectValidatorDetails vs
