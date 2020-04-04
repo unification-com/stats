@@ -103,17 +103,18 @@ tableAccounts24H = do
           ((\x -> toHtml (undConvertF x)) <$> accruedRewards)
   let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
   let totals = tr (td "Total" >> td totalBalance >> td totalRewards)
-  return $ renderHtml (table ! class_ "statstable" $ (tableHead >> rows >> totals))
+  return $
+    renderHtml (table ! class_ "statstable" $ (tableHead >> rows >> totals))
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
-  supplyTotalChange <- metricDX "supply" "total"
   supplyLockedChange <- metricDX "supply" "locked"
+  supplyTotalChange <- metricDX "supply" "total"
   let tableHead = thead (th "Total" >> th "Amount in UND")
   let lns =
         [ ("Supply Amount Change", (toHtml . undConvert) supplyAmountChange)
-        , ("Supply Total Change", (toHtml . undConvert) supplyTotalChange)
         , ("Supply Locked Change", (toHtml . undConvert) supplyLockedChange)
+        , ("Supply Total Change", (toHtml . undConvert) supplyTotalChange)
         ]
   return $
     renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
