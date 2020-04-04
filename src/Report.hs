@@ -137,9 +137,9 @@ tableValidators24H = do
   let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
   let tableHead =
         thead
-          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %" >>
-           th "Rewards" >>
-           th "Outstanding Rewards")
+          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Rewards" >>
+           th "Outstanding" >>
+           th "Commission %")
   let totals =
         tr
           (td "Total" >> td sharesTotalStr >> td "100.00" >> td "N/A" >>
@@ -155,9 +155,9 @@ tableValidators24H = do
              (\v ->
                 toHtml $ showFFloat (Just 2) (shares v / sharesTotal * 100) "")
              vxs)
-          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
           (toHtml . undConvertF <$> validatorRewards)
           (toHtml . undConvertF <$> validatorRewardsOutstanding)
+          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
   let rows =
         mapM_
           (\(a, b, c, d, e, f) ->
