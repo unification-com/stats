@@ -24,6 +24,8 @@ accounts =
   , "und10xpk56etf9s7efezvlu3qu5rg9djfm979cu4ax" -- MediaRallyAWS2020
   , "und12t657d878j97c3qn55r4zwx3smmwd3rxenc6k6" -- BidiPass
   , "und1duyhqzcgrzjy9y2yvueur2h3e2yqxhjl3jq2zl" -- Yellow.com
+  , "und1jvxdh905vpcnzarwqt9pqdjq8ks8jdh7fm006l" -- COACHK
+  , "und17jv7rerc2e3undqumpf32a3xs9jc0kjk4z2car" -- Faucet
   ]
 
 has vars = case hasCell of
