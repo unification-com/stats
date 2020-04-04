@@ -7,14 +7,15 @@ module Report
   ) where
 
 import           Control.Monad                   (forM_)
-import           Data.Text                       as T
+import           Data.List                       (zip6)
+import           Data.Text                       as T hiding (map)
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
 import           Database.PostgreSQL.Simple
 import           Numeric                         (showFFloat)
 
 import           Text.Blaze.Html.Renderer.String (renderHtml)
-import           Text.Blaze.Html5                as H
+import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (accounts, connectionString)
@@ -126,26 +127,41 @@ tableValidators24H = do
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> readValidator conn x) vs
-  let totalShares = sum (Parsers.Validator.shares <$> vxs)
-  let totalSharesStr = toHtml $ undConvertF $ totalShares
+  validatorRewards <-
+    mapM (\x -> obtainSampleF conn "rewards_validator" x now) (address <$> vxs)
+  validatorRewardsOutstanding <-
+    mapM
+      (\x -> obtainSampleF conn "rewards_outstanding_validator" x now)
+      (address <$> vxs)
+  let sharesTotal = sum (shares <$> vxs)
+  let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
   let tableHead =
         thead
-          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
-  let totals = tr (td "Total" >> td totalSharesStr >> td "100.00" >> td "N/A")
+          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %" >>
+           th "Rewards" >>
+           th "Outstanding Rewards")
+  let totals =
+        tr
+          (td "Total" >> td sharesTotalStr >> td "100.00" >> td "N/A" >>
+           td "N/A" >>
+           td "N/A")
+  let xns =
+        zip6
+          (map (\v -> makeValidatorURL (address v) (moniker v)) vxs)
+          (map
+             (\v -> toHtml $ showFFloat (Just 2) (shares v / 1000000000) "")
+             vxs)
+          (map
+             (\v ->
+                toHtml $ showFFloat (Just 2) (shares v / sharesTotal * 100) "")
+             vxs)
+          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
+          (toHtml . undConvertF <$> validatorRewards)
+          (toHtml . undConvertF <$> validatorRewardsOutstanding)
+  let rows =
+        mapM_
+          (\(a, b, c, d, e, f) ->
+             tr (td a >> td b >> td c >> td d >> td e >> td f))
+          xns
   return $
-    renderHtml
-      (table ! class_ "statstable" $
-       (tableHead >> (mapM_ (\x -> c totalShares x) vxs)) >> totals)
-  where
-    shr v = showFFloat (Just 2) (Parsers.Validator.shares v / 1000000000) ""
-    pow totalShares v =
-      showFFloat (Just 2) (Parsers.Validator.shares v / totalShares * 100) ""
-    comm v = showFFloat (Just 2) (Parsers.Validator.commission v * 100) ""
-    monn v =
-      (makeValidatorURL
-         (Parsers.Validator.address v)
-         (Parsers.Validator.moniker v))
-    c totalShares v =
-      tr
-        (td (monn v) >> td (toHtml (shr v)) >> td (toHtml (pow totalShares v)) >>
-         td (toHtml (comm v)))
+    renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
