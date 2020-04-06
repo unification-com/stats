@@ -62,6 +62,22 @@ executable radar
       base
     , stats
 
+executable stats-agent
+  hs-source-dirs:      app
+  main-is:             Agent.hs
+  default-language:    Haskell2010
+  build-depends:
+      base
+    , stats
+
+executable stats-collector
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:
+      base
+    , stats
+
 executable stats-site
   hs-source-dirs:      app
   main-is:             Site.hs
@@ -72,10 +88,14 @@ executable stats-site
   ghc-options:      -threaded
   default-language: Haskell2010
 
-executable stats-collector
+executable stats-receiver
   hs-source-dirs:      app
-  main-is:             Main.hs
+  main-is:             Receiver.hs
   default-language:    Haskell2010
   build-depends:
       base
     , stats
+    , aeson
+    , servant-server
+    , wai
+    , warp
