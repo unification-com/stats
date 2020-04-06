@@ -1,3 +1,5 @@
 module Main where
 
-main = undefined
+import Radar.Scan (scan)
+
+main = scan
