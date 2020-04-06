@@ -17,14 +17,15 @@ library
   hs-source-dirs:      src
   exposed-modules:
       Radar.Scan
+    , Radar.Slack
     , Report
     , Sampler
+    , Secrets
   other-modules:
       Config
     , Parsers.Account
     , Parsers.Common
     , Parsers.Validator
-    , Secrets
   build-depends:       
       base
     , blaze-html

@@ -1,5 +1,5 @@
 module Secrets
-  (
+  ( getSecret
   ) where
 
 import           Data.List        (elemIndex)
