@@ -53,6 +53,14 @@ library
 
   default-language:    Haskell2010
 
+executable radar
+  hs-source-dirs:      app
+  main-is:             Radar.hs
+  default-language:    Haskell2010
+  build-depends:
+      base
+    , stats
+
 executable stats-site
   hs-source-dirs:      app
   main-is:             Site.hs
@@ -66,14 +74,6 @@ executable stats-site
 executable stats-collector
   hs-source-dirs:      app
   main-is:             Main.hs
-  default-language:    Haskell2010
-  build-depends:
-      base
-    , stats
-
-executable radar
-  hs-source-dirs:      app
-  main-is:             Radar.hs
   default-language:    Haskell2010
   build-depends:
       base
