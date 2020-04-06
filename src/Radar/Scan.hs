@@ -46,16 +46,15 @@ testSite n url needle = do
       testSite (n + 1) url needle
     Right val -> do
       putStrLn $ url ++ " " ++ show val
-      return True
+      return val
 
 render :: (Bool, (String, String)) -> String
 render (success, (url, needle)) = url ++ " " ++ show success
 
-scan :: IO (Either String String)
 scan = do
   result <- mapM (\(url, needle) -> testSite 0 url needle) pairs
   let issue = any (\x -> x == False) result
   let c = unlines (map render (zip result pairs))
-  case issue of
-      True -> return $ Left c
-      False -> return $ Right "Everything is fine"
+  if issue
+    then return $ Left c
+    else return $ Right "Everything is fine"
