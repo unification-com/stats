@@ -16,6 +16,8 @@ pairs =
     , "operator_address")
   , ( "http://sentinel1-testnet.unification.io:26660/status"
     , "23be54f5d6fdf8cb49f434b9bc8762f725fe47a7")
+  , ( "http://sentinel2-testnet.unification.io:26660/status"
+    , "2603d0e9d79424c8b0fa84f36dde89045cf14f53")
   , ( "http://seed1-testnet.unification.io:26660/status"
     , "dcff5de69dcc170b28b6628a1336d420f7eb60c0")
   , ("https://wallet-testnet.unification.io", "Web Wallet")
@@ -37,23 +39,23 @@ check url component = do
 testSite :: Integer -> URL -> String -> IO Bool
 testSite 3 _ _ = return False
 testSite n url needle = do
-  print (show n)
   result <- try (check url needle) :: IO (Either HttpException Bool)
   case result of
     Left ex -> do
-      putStrLn $ "Caught exception yo yo: " ++ show ex
+      putStrLn $ "Caught exception: " ++ show ex
       testSite (n + 1) url needle
     Right val -> do
-      putStrLn $ "The answer was: " ++ show val
+      putStrLn $ url ++ " " ++ show val
       return True
 
 render :: (Bool, (String, String)) -> String
 render (success, (url, needle)) = url ++ " " ++ show success
 
+scan :: IO (Either String String)
 scan = do
   result <- mapM (\(url, needle) -> testSite 0 url needle) pairs
   let issue = any (\x -> x == False) result
-  let a = zip result pairs
-  let b = map render a
-  let c = unlines b
-  return $ c
+  let c = unlines (map render (zip result pairs))
+  case issue of
+      True -> return $ Left c
+      False -> return $ Right "Everything is fine"
