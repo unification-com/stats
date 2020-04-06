@@ -15,7 +15,12 @@ extra-source-files:  README.md
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Report, Sampler
+  exposed-modules:
+      Radar.Scan
+    , Radar.Slack
+    , Report
+    , Sampler
+    , Secrets
   other-modules:
       Config
     , Parsers.Account
@@ -25,18 +30,37 @@ library
       base
     , blaze-html
     , bytestring
-    , process
     , diagrams
     , diagrams-lib
     , diagrams-contrib
     , diagrams-svg
     , diagrams-core
     , diagrams-html5
+    , directory
+    , filepath
     , postgresql-simple
+    , process
     , text
     , time
     , SVGFonts
+    -- Radar requirements
+    , aeson
+    , http-conduit
+    , http-types
+    , http-client-tls
+    , http-client
+    , network
+    , unliftio
+
   default-language:    Haskell2010
+
+executable radar
+  hs-source-dirs:      app
+  main-is:             Radar.hs
+  default-language:    Haskell2010
+  build-depends:
+      base
+    , stats
 
 executable stats-site
   hs-source-dirs:      app
