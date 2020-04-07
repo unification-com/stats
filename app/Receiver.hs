@@ -34,4 +34,4 @@ stats = [ Stat 1 6
         ]
 
 main :: IO ()
-main = run 8080 app
+main = run 48535 app
