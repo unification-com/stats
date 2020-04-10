@@ -14,9 +14,9 @@ pairs =
   , ("https://faucet-testnet.unification.io", "Faucet")
   , ( "https://rest-testnet.unification.io/staking/validators"
     , "operator_address")
-  , ( "http://sentinel1-testnet.unification.io:26660/status"
+  , ( "http://node1-testnet.unification.io:26660/status"
     , "23be54f5d6fdf8cb49f434b9bc8762f725fe47a7")
-  , ( "http://sentinel2-testnet.unification.io:26660/status"
+  , ( "http://node2-testnet.unification.io:26660/status"
     , "2603d0e9d79424c8b0fa84f36dde89045cf14f53")
   , ( "http://seed1-testnet.unification.io:26660/status"
     , "dcff5de69dcc170b28b6628a1336d420f7eb60c0")
