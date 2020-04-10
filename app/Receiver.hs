@@ -11,6 +11,8 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant
 
+import           Secrets                  (getSecret)
+
 data Info =
   Info
     { success :: Bool
@@ -19,7 +21,8 @@ data Info =
 
 data Ingestion =
   Ingestion
-    { machine :: String
+    { password :: String
+    , machine  :: String
     }
   deriving (Eq, Show)
 
@@ -29,21 +32,29 @@ $(deriveJSON defaultOptions ''Ingestion)
 
 type API = "ingest" :> ReqBody '[ JSON] Ingestion :> Post '[ JSON] Info
 
-app :: Application
-app = serve api server
+app :: String -> Application
+app secret = serve api (server secret)
 
 api :: Proxy API
 api = Proxy
 
-server :: Server API
-server = position
+server :: String -> Server API
+server secret = position
   where
     position x = do
-      liftIO (print x)
-      return (info x)
+      case (password x == secret) of
+        True -> do
+          liftIO (print x)
+          return (Info True)
+        False -> return (Info False)
 
 info :: Ingestion -> Info
 info ingestion = Info True
 
 main :: IO ()
-main = run 48535 app
+main = do
+  secret <- getSecret "ReceiverAccess"
+  case secret of
+    Nothing -> print "ReceiverAccess secret not found"
+    Just pass -> do
+      run 48535 (app pass)
