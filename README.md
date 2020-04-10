@@ -2,6 +2,9 @@
 Statistics over the Unification network
 
 
+## Installation
+
+All the binaries can be installed with `stack build`, however the `postgresql-libs` Linux package will be required.
 
 ## radar
 
