@@ -21,6 +21,7 @@ library
     , Report
     , Sampler
     , Secrets
+    , Trawl
   other-modules:
       Config
     , Parsers.Account
