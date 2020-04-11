@@ -13,4 +13,4 @@ main = do
         Nothing -> print "Machine name not found"
         Just m -> do
           print $ "Collecting stats for " ++ m
-          trawl
+          trawl pass m
