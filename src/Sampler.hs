@@ -50,7 +50,7 @@ injectS :: Maybe Machine -> String -> String -> String -> IO Int64
 injectS machine metric key sample = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetricS $ [metric, key, show sample, machineStr machine]
+  execute conn insertMetricS $ [metric, key, sample, machineStr machine]
 
 injectSupply = do
   cs <- connectionString
