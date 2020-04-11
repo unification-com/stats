@@ -11,7 +11,7 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant
 
-import           Sampler                  (injectS)
+import           Sampler                  (injectF, injectS, injectZ)
 import           Secrets                  (getSecret)
 
 data Info =
@@ -44,12 +44,28 @@ api :: Proxy API
 api = Proxy
 
 server :: String -> Server API
-server secret = position
+server secret = receive
   where
-    position x = do
+    receive x = do
       case (password x == secret) of
         True -> do
-          liftIO (injectS (Just $ machine x) (metric x) (key x) (sample x))
+          case (datatype x) of
+            "string" ->
+              liftIO (injectS (Just $ machine x) (metric x) (key x) (sample x))
+            "float" ->
+              liftIO
+                (injectF
+                   (Just $ machine x)
+                   (metric x)
+                   (key x)
+                   (read (sample x) :: Float))
+            "integer" ->
+              liftIO
+                (injectZ
+                   (Just $ machine x)
+                   (metric x)
+                   (key x)
+                   (read (sample x) :: Int))
           return (Info True)
         False -> return (Info False)
 
