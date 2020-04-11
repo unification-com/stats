@@ -11,6 +11,7 @@ import           Network.Wai
 import           Network.Wai.Handler.Warp
 import           Servant
 
+import           Sampler                  (injectS)
 import           Secrets                  (getSecret)
 
 data Info =
@@ -23,6 +24,10 @@ data Ingestion =
   Ingestion
     { password :: String
     , machine  :: String
+    , datatype :: String
+    , metric   :: String
+    , key      :: String
+    , sample   :: String
     }
   deriving (Eq, Show)
 
@@ -44,7 +49,7 @@ server secret = position
     position x = do
       case (password x == secret) of
         True -> do
-          liftIO (print x)
+          liftIO (injectS (Just $ machine x) (metric x) (key x) (sample x))
           return (Info True)
         False -> return (Info False)
 

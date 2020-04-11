@@ -16,8 +16,8 @@ queryMainchainAccount account = do
       (restEndpoint "auth/accounts/" ++ account)
       ".result.account.value.coins[0].amount"
   if head val == "null"
-    then return "0"
-    else return $ head val
+    then return 0
+    else return $ (read (head val) :: Int)
 
 queryRewards account = do
   val <-
