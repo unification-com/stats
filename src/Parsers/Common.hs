@@ -41,8 +41,7 @@ saltCmd grain args query =
   saltSection grain ++ " | jq " ++ argStr ++ " '" ++ query ++ "' "
   where
     saltSection grain =
-      "/usr/local/bin/salt-call --local " ++
-      grain ++ " --output json --log-level error"
+      "salt-call --local " ++ grain ++ " --output json --log-level error"
     argStr = intercalate " " $ jqArgs args
     jqArgs args =
       (\(x, y) -> "--arg " ++ [y] ++ " '" ++ x ++ "'") <$> (zip args vars)
