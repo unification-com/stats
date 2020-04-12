@@ -40,11 +40,18 @@ submit secret machine datatype metric key sample = do
 
 ping secret machine = submit secret machine "string" "ping" "ping" "ping"
 
+removePunc :: String -> String
+removePunc xs = filter (not . (`elem` exclusions)) xs
+  where
+    exclusions = ",.?!-:;\"\'\\" :: String
+
 diskUsage secret machine = do
   out <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
   print $ show out
-  submit secret machine "integer" "DiskUsage" "Used" (out !! 0)
-  submit secret machine "integer" "DiskUsage" "1KBlocks" (out !! 1)
+  let xs = removePunc <$> out
+  print $ show xs
+  submit secret machine "integer" "DiskUsage" "Used" (xs !! 0)
+  submit secret machine "integer" "DiskUsage" "1KBlocks" (xs !! 1)
 
 trawl :: String -> String -> IO ()
 trawl secret machine = do
