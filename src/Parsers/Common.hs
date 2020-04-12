@@ -28,9 +28,14 @@ saltjq grain args query = do
     createProcess ((shell (shell_cmd)) {std_out = CreatePipe})
   exitCode <- waitForProcess hProc
   output <- hGetContents hOut
-  return $ lines output
+  return $ removePunc <$> lines output
   where
     shell_cmd = saltCmd grain args query
+
+removePunc :: String -> String
+removePunc xs = filter (not . (`elem` exclusions)) xs
+  where
+    exclusions = ",.?!-:;\"\'\\" :: String
 
 saltCmd grain args query =
   saltSection grain ++ " | jq " ++ argStr ++ " '" ++ query ++ "' "
@@ -42,4 +47,3 @@ saltCmd grain args query =
     jqArgs args =
       (\(x, y) -> "--arg " ++ [y] ++ " '" ++ x ++ "'") <$> (zip args vars)
     vars = take (length args) ['a' ..]
-

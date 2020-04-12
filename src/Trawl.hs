@@ -35,24 +35,19 @@ submit secret machine datatype metric key sample = do
           }
   response <- httpLbs request manager
   let code = statusCode $ responseStatus response
-  if code /= 200 then
-    putStrLn $ "Error: request with code: " ++ show code
-  else
-    putStrLn $ "200 OK"
+  if code /= 200
+    then putStrLn $ "Error: request with code: " ++ show code
+    else putStrLn $ "200 OK"
   return code
 
 ping secret machine = submit secret machine "string" "ping" "ping" "ping"
 
-removePunc :: String -> String
-removePunc xs = filter (not . (`elem` exclusions)) xs
-  where
-    exclusions = ",.?!-:;\"\'\\" :: String
-
 diskUsage secret machine = do
-  out <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
-  let xs = removePunc <$> out
-  submit secret machine "integer" "DiskUsage" "Used" (xs !! 0)
-  submit secret machine "integer" "DiskUsage" "1KBlocks" (xs !! 1)
+  xs <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
+  submitDiskUsage "Used" (xs !! 0)
+  submitDiskUsage "1KBlocks" (xs !! 1)
+  where
+    submitDiskUsage = submit secret machine "integer" "DiskUsage"
 
 trawl :: String -> String -> IO ()
 trawl secret machine = do
