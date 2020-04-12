@@ -13,7 +13,7 @@ import           Parsers.Common            (saltjq)
 
 ingestionEnpoint = "https://ingest-testnet.unification.io/ingest"
 
-submit :: String -> String -> String -> String -> String -> String -> IO ()
+submit :: String -> String -> String -> String -> String -> String -> IO Int
 submit secret machine datatype metric key sample = do
   manager <- newManager tlsManagerSettings
   let requestObject =
@@ -34,9 +34,12 @@ submit secret machine datatype metric key sample = do
               [("Content-Type", "application/json; charset=utf-8")]
           }
   response <- httpLbs request manager
-  putStrLn $
-    "The status code was: " ++ show (statusCode $ responseStatus response)
-  return ()
+  let code = statusCode $ responseStatus response
+  if code /= 200 then
+    putStrLn $ "Error: request with code: " ++ show code
+  else
+    putStrLn $ "200 OK"
+  return code
 
 ping secret machine = submit secret machine "string" "ping" "ping" "ping"
 
@@ -47,9 +50,7 @@ removePunc xs = filter (not . (`elem` exclusions)) xs
 
 diskUsage secret machine = do
   out <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
-  print $ show out
   let xs = removePunc <$> out
-  print $ show xs
   submit secret machine "integer" "DiskUsage" "Used" (xs !! 0)
   submit secret machine "integer" "DiskUsage" "1KBlocks" (xs !! 1)
 
