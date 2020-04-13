@@ -27,6 +27,7 @@ library
     , Parsers.Account
     , Parsers.Common
     , Parsers.Validator
+    , Queries
   build-depends:       
       base
     , blaze-html
@@ -51,6 +52,8 @@ library
     , http-client-tls
     , http-client
     , network
+    , raw-strings-qq
+    -- TODO: Is unliftio used?
     , unliftio
 
   default-language:    Haskell2010
