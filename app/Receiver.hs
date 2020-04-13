@@ -4,34 +4,78 @@
 
 module Main where
 
-import Data.Aeson
-import Data.Aeson.TH
-import Network.Wai
-import Network.Wai.Handler.Warp
-import Servant
+import           Control.Monad.Except
+import           Data.Aeson
+import           Data.Aeson.TH
+import           Network.Wai
+import           Network.Wai.Handler.Warp
+import           Servant
 
-data Stat = Stat
-  { statId        :: Int
-  , statValue     :: Int
-  } deriving (Eq, Show)
+import           Sampler                  (injectF, injectS, injectZ)
+import           Secrets                  (getSecret)
 
-$(deriveJSON defaultOptions ''Stat)
+data Info =
+  Info
+    { success :: Bool
+    }
+  deriving (Eq, Show)
 
-type API = "stats" :> Get '[JSON] [Stat]
+data Ingestion =
+  Ingestion
+    { password :: String
+    , machine  :: String
+    , datatype :: String
+    , metric   :: String
+    , key      :: String
+    , sample   :: String
+    }
+  deriving (Eq, Show)
 
-app :: Application
-app = serve api server
+$(deriveJSON defaultOptions ''Info)
+
+$(deriveJSON defaultOptions ''Ingestion)
+
+type API = "ingest" :> ReqBody '[ JSON] Ingestion :> Post '[ JSON] Info
+
+app :: String -> Application
+app secret = serve api (server secret)
 
 api :: Proxy API
 api = Proxy
 
-server :: Server API
-server = return stats
+server :: String -> Server API
+server secret = receive
+  where
+    receive x = do
+      case (password x == secret) of
+        True -> do
+          case (datatype x) of
+            "string" ->
+              liftIO (injectS (Just $ machine x) (metric x) (key x) (sample x))
+            "float" ->
+              liftIO
+                (injectF
+                   (Just $ machine x)
+                   (metric x)
+                   (key x)
+                   (read (sample x) :: Float))
+            "integer" ->
+              liftIO
+                (injectZ
+                   (Just $ machine x)
+                   (metric x)
+                   (key x)
+                   (read (sample x) :: Int))
+          return (Info True)
+        False -> return (Info False)
 
-stats :: [Stat]
-stats = [ Stat 1 6
-        , Stat 2 5
-        ]
+info :: Ingestion -> Info
+info ingestion = Info True
 
 main :: IO ()
-main = run 8080 app
+main = do
+  secret <- getSecret "ReceiverAccess"
+  case secret of
+    Nothing -> print "ReceiverAccess secret not found"
+    Just pass -> do
+      run 48535 (app pass)

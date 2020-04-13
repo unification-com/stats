@@ -96,6 +96,7 @@ executable stats-receiver
       base
     , stats
     , aeson
+    , mtl
     , servant-server
     , wai
     , warp

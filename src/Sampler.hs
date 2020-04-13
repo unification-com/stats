@@ -2,6 +2,9 @@
 
 module Sampler
   ( sample
+  , injectZ
+  , injectF
+  , injectS
   ) where
 
 import           Config                     (accounts, connectionString)
@@ -12,30 +15,50 @@ import           Parsers.Account            (queryMainchainAccount,
 import           Parsers.Validator          (sampleValidators)
 
 import           Database.PostgreSQL.Simple
+import           GHC.Int                    (Int64)
+
+type Machine = String
 
 insertMetric =
-  "INSERT INTO stats.metrics (metric, feature, sample) VALUES (?, ?, ?);"
+  "INSERT INTO stats.metrics (metric, feature, sample, machine) VALUES (?, ?, ?, ?);"
 
 insertMetricF =
-  "INSERT INTO stats.metricsf (metric, feature, sample) VALUES (?, ?, ?);"
+  "INSERT INTO stats.metricsf (metric, feature, sample, machine) VALUES (?, ?, ?, ?);"
 
-inject metric account nund = do
+insertMetricS =
+  "INSERT INTO stats.strings (metric, feature, sample, machine) VALUES (?, ?, ?, ?);"
+
+machineStr m =
+  case m of
+    Nothing -> "general"
+    Just x  -> x
+
+injectZ :: Maybe Machine -> String -> String -> Int -> IO Int64
+injectZ machine metric account sample = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetric $ [metric, account, nund]
+  execute conn insertMetric $ [metric, account, show sample, machineStr machine]
 
-injectF metric account sample = do
+injectF :: Maybe Machine -> String -> String -> Float -> IO Int64
+injectF machine metric account sample = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetricF $ [metric, account, show sample]
+  execute conn insertMetricF $ [metric, account, show sample, machineStr machine]
+
+injectS :: Maybe Machine -> String -> String -> String -> IO Int64
+injectS machine metric key sample = do
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  execute conn insertMetricS $
+    [metric, key, show sample, machineStr machine]
 
 injectSupply = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
   (amount, locked, total) <- supply
-  execute conn insertMetric $ ["supply", "amount", amount]
-  execute conn insertMetric $ ["supply", "locked", locked]
-  execute conn insertMetric $ ["supply", "total", total]
+  execute conn insertMetric $ ["supply", "amount", amount, machineStr Nothing]
+  execute conn insertMetric $ ["supply", "locked", locked, machineStr Nothing]
+  execute conn insertMetric $ ["supply", "total", total, machineStr Nothing]
 
 mark str = do
   cs <- connectionString
@@ -45,18 +68,18 @@ mark str = do
 
 queryAndInjectAccountDetails account = do
   balance <- queryMainchainAccount account
-  inject "account" account balance
-  print $ account ++ ": " ++ balance
+  injectZ Nothing "account" account balance
+  print $ account ++ ": " ++ (show balance)
   rewards <- queryRewards account
-  injectF "rewards" account rewards
+  injectF Nothing "rewards" account rewards
   print $ account ++ ": " ++ show rewards
 
 queryAndInjectValidatorDetails validatorAccount = do
   rewards <- queryValidatorRewards validatorAccount
-  injectF "rewards_validator" validatorAccount rewards
+  injectF Nothing "rewards_validator" validatorAccount rewards
   print $ validatorAccount ++ ": " ++ show rewards
   rewardsOutstanding <- queryValidatorOutstandingRewards validatorAccount
-  injectF "rewards_outstanding_validator" validatorAccount rewardsOutstanding
+  injectF Nothing "rewards_outstanding_validator" validatorAccount rewardsOutstanding
   print $ validatorAccount ++ ": " ++ show rewardsOutstanding
 
 sample = do
