@@ -49,6 +49,7 @@ server secret = receive
     receive x = do
       case (password x == secret) of
         True -> do
+          liftIO (print $ "Received sample: " ++ (show (sample x)))
           case (datatype x) of
             "string" ->
               liftIO (injectS (Just $ machine x) (metric x) (key x) (sample x))

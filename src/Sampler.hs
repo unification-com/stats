@@ -43,14 +43,14 @@ injectF :: Maybe Machine -> String -> String -> Float -> IO Int64
 injectF machine metric account sample = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetricF $ [metric, account, show sample, machineStr machine]
+  execute conn insertMetricF $
+    [metric, account, show sample, machineStr machine]
 
 injectS :: Maybe Machine -> String -> String -> String -> IO Int64
 injectS machine metric key sample = do
   cs <- connectionString
   conn <- connectPostgreSQL cs
-  execute conn insertMetricS $
-    [metric, key, show sample, machineStr machine]
+  execute conn insertMetricS $ [metric, key, sample, machineStr machine]
 
 injectSupply = do
   cs <- connectionString
@@ -79,7 +79,11 @@ queryAndInjectValidatorDetails validatorAccount = do
   injectF Nothing "rewards_validator" validatorAccount rewards
   print $ validatorAccount ++ ": " ++ show rewards
   rewardsOutstanding <- queryValidatorOutstandingRewards validatorAccount
-  injectF Nothing "rewards_outstanding_validator" validatorAccount rewardsOutstanding
+  injectF
+    Nothing
+    "rewards_outstanding_validator"
+    validatorAccount
+    rewardsOutstanding
   print $ validatorAccount ++ ": " ++ show rewardsOutstanding
 
 sample = do
