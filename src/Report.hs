@@ -166,11 +166,11 @@ repr (Just x) = toHtml $ show x
 tableDiskUsage = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
-  l1 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
-  l2 <- latestZQuery conn ("DiskUsage", "Used", now)
+  l1 <- latestZQuery conn ("DiskUsage", "Used", now)
+  l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
   let m3 = zipMap (fromList l1) (fromList l2)
   let xns =
         (\(a, b) -> (toHtml a, repr $ fst b, repr $ snd b)) <$> (M.toList m3)
-  let tableHead = thead (th "Machine" >> th "1KBlocks" >> th "Used")
+  let tableHead = thead (th "Machine" >> th "Used" >> th "Total")
   let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
   return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
