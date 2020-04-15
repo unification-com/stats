@@ -4,12 +4,13 @@ module Report
   ( tableTotalSupply24H
   , tableAccounts24H
   , tableValidators24H
+  , tableDiskUsage
   ) where
 
 import           Control.Monad                   (forM_)
 import           Data.List                       (zip6)
 import           Data.Map.Strict                 as M (Map, fromList, keys,
-                                                       lookup, union)
+                                                       lookup, toList, union)
 import           Data.Text                       as T hiding (map)
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
@@ -151,3 +152,25 @@ zipMap m1 m2 =
   let allKeys = keys (union m1 m2)
       f' k = (k, (M.lookup k m1, M.lookup k m2))
    in fromList $ map f' allKeys
+
+defaultLookup :: Map String Int -> String
+defaultLookup key map =
+  case (M.lookup key map) of
+    Nothing -> "N/A"
+    Just x  -> show x
+
+repr :: Maybe Int -> Html
+repr Nothing  = toHtml ("N/A" :: String)
+repr (Just x) = toHtml $ show x
+
+tableDiskUsage = do
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  l1 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
+  l2 <- latestZQuery conn ("DiskUsage", "Used", now)
+  let m3 = zipMap (fromList l1) (fromList l2)
+  let xns =
+        (\(a, b) -> (toHtml a, repr $ fst b, repr $ snd b)) <$> (M.toList m3)
+  let tableHead = thead (th "Machine" >> th "1KBlocks" >> th "Used")
+  let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
+  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
