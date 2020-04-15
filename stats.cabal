@@ -40,6 +40,7 @@ library
     , diagrams-html5
     , directory
     , filepath
+    , raw-strings-qq
     , postgresql-simple
     , process
     , text
@@ -52,9 +53,6 @@ library
     , http-client-tls
     , http-client
     , network
-    , raw-strings-qq
-    -- TODO: Is unliftio used?
-    , unliftio
 
   default-language:    Haskell2010
 
