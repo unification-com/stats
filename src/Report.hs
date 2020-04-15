@@ -153,7 +153,7 @@ zipMap m1 m2 =
       f' k = (k, (M.lookup k m1, M.lookup k m2))
    in fromList $ map f' allKeys
 
-defaultLookup :: Map String Int -> String
+defaultLookup :: String -> Map String Int -> String
 defaultLookup key map =
   case (M.lookup key map) of
     Nothing -> "N/A"
