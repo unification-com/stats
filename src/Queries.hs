@@ -72,10 +72,11 @@ latestZQuery c (metric, feature, (a, b)) =
       SELECT DISTINCT(machine) as machinej FROM %s
       WHERE metric = ? AND feature = ? AND utc_date > ? AND utc_date < ?) N2
       ON (N1.machine = N2.machinej)
+  WHERE metric = ? AND feature = ?
   ORDER BY N1.machine, utc_date DESC;
   |]
         table
         table)) $
-  [metric, feature, show a, show b]
+  [metric, feature, show a, show b, metric, feature]
   where
     table = "stats.metrics"
