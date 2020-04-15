@@ -47,6 +47,9 @@ undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
 undConvertF :: RealFloat a => a -> String
 undConvertF n = showFFloat (Just 2) (n / 1000000000) ""
 
+gbConvert :: Int -> String
+gbConvert n = showFFloat (Just 2) (fromIntegral n / 1000000) ""
+
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
   where
@@ -161,7 +164,7 @@ defaultLookup key map =
 
 repr :: Maybe Int -> Html
 repr Nothing  = toHtml ("N/A" :: String)
-repr (Just x) = toHtml $ show x
+repr (Just x) = toHtml $ (gbConvert x)
 
 tableDiskUsage = do
   now <- window
@@ -171,6 +174,6 @@ tableDiskUsage = do
   let m3 = zipMap (fromList l1) (fromList l2)
   let xns =
         (\(a, b) -> (toHtml a, repr $ fst b, repr $ snd b)) <$> (M.toList m3)
-  let tableHead = thead (th "Machine" >> th "Used" >> th "Total")
+  let tableHead = thead (th "Machine" >> th "Used (GB)" >> th "Total (GB)")
   let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
   return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
