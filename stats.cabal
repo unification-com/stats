@@ -11,7 +11,7 @@ copyright:           2020 Unification Foundation
 category:            Data
 build-type:          Simple
 cabal-version:       >=1.10
-extra-source-files:  README.md
+extra-source-files:  README.org
 
 library
   hs-source-dirs:      src
@@ -27,10 +27,12 @@ library
     , Parsers.Account
     , Parsers.Common
     , Parsers.Validator
+    , Queries
   build-depends:       
       base
     , blaze-html
     , bytestring
+    , containers
     , diagrams
     , diagrams-lib
     , diagrams-contrib
@@ -39,6 +41,7 @@ library
     , diagrams-html5
     , directory
     , filepath
+    , raw-strings-qq
     , postgresql-simple
     , process
     , text
@@ -51,7 +54,6 @@ library
     , http-client-tls
     , http-client
     , network
-    , unliftio
 
   default-language:    Haskell2010
 
