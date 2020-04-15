@@ -12,5 +12,6 @@ main = do
       case machine of
         Nothing -> print "Machine name not found"
         Just m -> do
-          print $ "Collecting stats for " ++ m
-          trawl pass m
+          endpoint <- getSecret "IngestionEndpoint"
+          print $ "Collecting stats for " ++ m ++ " with endpoint " ++ show endpoint
+          trawl pass m endpoint
