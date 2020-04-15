@@ -8,6 +8,8 @@ module Report
 
 import           Control.Monad                   (forM_)
 import           Data.List                       (zip6)
+import           Data.Map.Strict                 as M (Map, fromList, keys,
+                                                       lookup, union)
 import           Data.Text                       as T hiding (map)
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
@@ -143,3 +145,9 @@ tableValidators24H = do
           xns
   return $
     renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
+
+zipMap :: Map String Int -> Map String Int -> Map String (Maybe Int, Maybe Int)
+zipMap m1 m2 =
+  let allKeys = keys (union m1 m2)
+      f' k = (k, (M.lookup k m1, M.lookup k m2))
+   in fromList $ map f' allKeys
