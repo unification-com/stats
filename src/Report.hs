@@ -20,35 +20,11 @@ import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (accounts, connectionString)
 import           Parsers.Validator               (Validator (..), readValidator)
+import           Queries                         (FeatureQuery, Window,
+                                                  latestZQuery, obtainSample,
+                                                  obtainSampleF)
 
-obtainSample :: Connection -> String -> String -> (UTCTime, UTCTime) -> IO Int
-obtainSample c metric feature (a, b) = do
-  a <-
-    query
-      c
-      "SELECT a.sample - b.sample FROM \
-      \(SELECT sample FROM stats.metrics WHERE metric = ? and feature = ? AND \
-      \utc_date > ? AND utc_date < ? ORDER BY utc_date DESC LIMIT 1) a CROSS JOIN \
-      \(SELECT sample FROM stats.metrics WHERE metric = ? and feature = ? AND utc_date > ? AND utc_date < ? \
-      \ORDER BY utc_date ASC LIMIT 1) b" $
-    [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Int]
-  return $ fromOnly $ Prelude.head a
-
-obtainSampleF ::
-     Connection -> String -> String -> (UTCTime, UTCTime) -> IO Double
-obtainSampleF c metric feature (a, b) = do
-  a <-
-    query
-      c
-      "SELECT a.sample - b.sample FROM \
-      \(SELECT sample FROM stats.metricsf WHERE metric = ? and feature = ? AND \
-      \utc_date > ? AND utc_date < ? ORDER BY utc_date DESC LIMIT 1) a CROSS JOIN \
-      \(SELECT sample FROM stats.metricsf WHERE metric = ? and feature = ? AND utc_date > ? AND utc_date < ? \
-      \ORDER BY utc_date ASC LIMIT 1) b" $
-    [metric, feature, show a, show b, metric, feature, show a, show b] :: IO [Only Double]
-  return $ fromOnly $ Prelude.head a
-
-validators :: Connection -> (UTCTime, UTCTime) -> IO [String]
+validators :: Connection -> Window -> IO [String]
 validators c (a, b) = do
   a <-
     query
@@ -57,7 +33,7 @@ validators c (a, b) = do
     [show a, show b] :: IO [Only String]
   return $ fromOnly <$> a
 
-window :: IO (UTCTime, UTCTime)
+window :: IO Window
 window = do
   now <- getCurrentTime
   return $ (addUTCTime (-3600 * 24) now, now)
@@ -85,13 +61,13 @@ makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
 metricDX metric feature = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
-  obtainSample conn metric feature now
+  obtainSample conn (metric, feature, now)
 
 tableAccounts24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
-  balance <- mapM (\x -> obtainSample conn "account" x now) accounts
-  accruedRewards <- mapM (\x -> obtainSampleF conn "rewards" x now) accounts
+  balance <- mapM (\x -> obtainSample conn ("account", x, now)) accounts
+  accruedRewards <- mapM (\x -> obtainSampleF conn ("rewards", x, now)) accounts
   let totalBalance = toHtml $ undConvert $ sum balance
   let totalRewards = toHtml $ undConvertF $ sum accruedRewards
   let tableHead =
@@ -128,10 +104,12 @@ tableValidators24H = do
   vs <- validators conn now
   vxs <- mapM (\x -> readValidator conn x) vs
   validatorRewards <-
-    mapM (\x -> obtainSampleF conn "rewards_validator" x now) (address <$> vxs)
+    mapM
+      (\x -> obtainSampleF conn ("rewards_validator", x, now))
+      (address <$> vxs)
   validatorRewardsOutstanding <-
     mapM
-      (\x -> obtainSampleF conn "rewards_outstanding_validator" x now)
+      (\x -> obtainSampleF conn ("rewards_outstanding_validator", x, now))
       (address <$> vxs)
   let sharesTotal = sum (shares <$> vxs)
   let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
