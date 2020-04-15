@@ -162,9 +162,15 @@ defaultLookup key map =
     Nothing -> "N/A"
     Just x  -> show x
 
-repr :: Maybe Int -> Html
-repr Nothing  = toHtml ("N/A" :: String)
-repr (Just x) = toHtml $ (gbConvert x)
+repr :: Maybe Int -> String
+repr Nothing  = "N/A"
+repr (Just x) = gbConvert x
+
+renderTable :: [String] -> [[ String ]] -> IO String
+renderTable headers ds = do
+  let tableHead = thead (mapM_ (th . toHtml) headers)
+  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs) ) ds
+  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
 
 tableDiskUsage = do
   now <- window
@@ -172,8 +178,7 @@ tableDiskUsage = do
   l1 <- latestZQuery conn ("DiskUsage", "Used", now)
   l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
   let m3 = zipMap (fromList l1) (fromList l2)
-  let xns =
-        (\(a, b) -> (toHtml a, repr $ fst b, repr $ snd b)) <$> (M.toList m3)
-  let tableHead = thead (th "Machine" >> th "Used (GB)" >> th "Total (GB)")
-  let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
-  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
+  let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b] ) <$> (M.toList m3)
+  let headers = ["Machine", "Used (GB)", "Total (GB)"]
+  t <- renderTable headers xns
+  return $ t
