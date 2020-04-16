@@ -156,12 +156,6 @@ zipMap m1 m2 =
       f' k = (k, (M.lookup k m1, M.lookup k m2))
    in fromList $ map f' allKeys
 
-defaultLookup :: String -> Map String Int -> String
-defaultLookup key map =
-  case (M.lookup key map) of
-    Nothing -> "N/A"
-    Just x  -> show x
-
 repr :: Maybe Int -> String
 repr Nothing  = "N/A"
 repr (Just x) = gbConvert x
