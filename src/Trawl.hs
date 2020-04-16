@@ -13,8 +13,8 @@ import           Parsers.Common            (saltjq)
 
 ingestionEnpoint = "https://ingest-testnet.unification.io/ingest"
 
-submit :: String -> String -> String -> String -> String -> String -> IO Int
-submit secret machine datatype metric key sample = do
+submit :: String -> String -> Maybe String -> String -> String -> String -> String -> IO Int
+submit secret machine endpoint datatype metric key sample = do
   manager <- newManager tlsManagerSettings
   let requestObject =
         object
@@ -25,7 +25,7 @@ submit secret machine datatype metric key sample = do
           , "key" .= (key :: String)
           , "sample" .= (sample :: String)
           ]
-  initialRequest <- parseRequest ingestionEnpoint
+  initialRequest <- parseRequest resolvedEndpoint
   let request =
         initialRequest
           { method = "POST"
@@ -39,18 +39,22 @@ submit secret machine datatype metric key sample = do
     then putStrLn $ "Error: request with code: " ++ show code
     else putStrLn $ "200 OK"
   return code
+  where
+    resolvedEndpoint = case endpoint of
+      Nothing -> ingestionEnpoint
+      Just x -> x
 
-ping secret machine = submit secret machine "string" "ping" "ping" "ping"
+ping secret machine endpoint = submit secret machine endpoint "string" "ping" "ping" "ping"
 
-diskUsage secret machine = do
+diskUsage secret machine endpoint = do
   xs <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
   submitDiskUsage "Used" (xs !! 0)
   submitDiskUsage "1KBlocks" (xs !! 1)
   where
-    submitDiskUsage = submit secret machine "integer" "DiskUsage"
+    submitDiskUsage = submit secret machine endpoint "integer" "DiskUsage"
 
-trawl :: String -> String -> IO ()
-trawl secret machine = do
-  ping secret machine
-  diskUsage secret machine
+trawl :: String -> String -> Maybe String -> IO ()
+trawl secret machine endpoint = do
+  ping secret machine endpoint
+  diskUsage secret machine endpoint
   print "Done trawling"

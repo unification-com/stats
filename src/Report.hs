@@ -4,12 +4,13 @@ module Report
   ( tableTotalSupply24H
   , tableAccounts24H
   , tableValidators24H
+  , tableDiskUsage
   ) where
 
 import           Control.Monad                   (forM_)
 import           Data.List                       (zip6)
 import           Data.Map.Strict                 as M (Map, fromList, keys,
-                                                       lookup, union)
+                                                       lookup, toList, union)
 import           Data.Text                       as T hiding (map)
 import           Data.Time.Clock                 (UTCTime, addUTCTime,
                                                   getCurrentTime)
@@ -45,6 +46,9 @@ undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
 
 undConvertF :: RealFloat a => a -> String
 undConvertF n = showFFloat (Just 2) (n / 1000000000) ""
+
+gbConvert :: Int -> String
+gbConvert n = showFFloat (Just 2) (fromIntegral n / 1000000) ""
 
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
@@ -151,3 +155,24 @@ zipMap m1 m2 =
   let allKeys = keys (union m1 m2)
       f' k = (k, (M.lookup k m1, M.lookup k m2))
    in fromList $ map f' allKeys
+
+repr :: Maybe Int -> String
+repr Nothing  = "N/A"
+repr (Just x) = gbConvert x
+
+renderTable :: [String] -> [[ String ]] -> IO String
+renderTable headers ds = do
+  let tableHead = thead (mapM_ (th . toHtml) headers)
+  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs) ) ds
+  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
+
+tableDiskUsage = do
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  l1 <- latestZQuery conn ("DiskUsage", "Used", now)
+  l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
+  let m3 = zipMap (fromList l1) (fromList l2)
+  let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b] ) <$> (M.toList m3)
+  let headers = ["Machine", "Used (GB)", "Total (GB)"]
+  t <- renderTable headers xns
+  return $ t
