@@ -11,7 +11,7 @@ import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Status (statusCode)
 import           System.FilePath.Posix     (splitFileName)
 
-import           Parsers.Common            (saltjq)
+import           Parsers.Common            (runPython)
 
 ingestionEnpoint = "https://ingest-testnet.unification.io/ingest"
 
@@ -59,9 +59,10 @@ ping secret machine endpoint =
   submit secret machine endpoint "string" "ping" "ping" "ping"
 
 diskUsage secret machine endpoint = do
-  xs <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
-  submitDiskUsage "Used" (xs !! 0)
-  submitDiskUsage "1KBlocks" (xs !! 1)
+  xs <- runPython "import shutil; d = shutil.disk_usage(\"/\"); print (d.used, d.total)"
+  let b = words (xs !! 0)
+  submitDiskUsage "Used" (b !! 0)
+  submitDiskUsage "1KBlocks" (b !! 1)
   where
     submitDiskUsage = submit secret machine endpoint "integer" "DiskUsage"
 
