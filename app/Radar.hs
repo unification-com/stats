@@ -14,10 +14,11 @@ evaluate scanner = do
     Just channel -> do
       ret <- scanner
       case ret of
-        Left xs -> postToSlack channel xs
-        Right xs -> do
-          print xs
+        Left xs -> do
+          postToSlack channel xs
           exitWith (ExitFailure 1)
+        Right xs -> print xs
+
 
 fn :: [Char] -> [String] -> IO ()
 fn "internal" args = evaluate scanPorts
