@@ -83,7 +83,7 @@ render :: (Bool, (String, String)) -> String
 render (success, (url, _)) = url ++ " " ++ show success
 
 renderPort :: (Bool, (String, Int)) -> String
-renderPort (success, (url, _)) = url ++ " " ++ show success
+renderPort (success, (url, port)) = url ++ " " ++ show port ++ " " ++ show success
 
 scan = do
   result <- mapM (\(url, needle) -> testSite 0 url needle) pairs
