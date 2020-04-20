@@ -29,7 +29,11 @@ pairs =
   ]
 
 ports =
-  [("172.31.38.249", 26656), ("172.31.36.108", 26656), ("172.31.33.80", 26656)]
+  [ ("172.31.38.249", 26656)
+  , ("172.31.36.108", 26656)
+  , ("172.31.33.80", 26656)
+  , ("35.188.75.191", 26656)
+  ]
 
 fetchURL :: URL -> IO L8.ByteString
 fetchURL url = do
@@ -70,20 +74,19 @@ testSite n url needle = do
 testPort :: Integer -> URL -> Int -> IO Bool
 testPort 3 _ _ = return False
 testPort n ipAddress port = do
-  result <- try (netcat ipAddress port) :: IO (Either HttpException Bool)
+  result <- netcat ipAddress port
   case result of
-    Left ex -> do
-      putStrLn $ "Caught exception: " ++ show ex
+    False -> do
+      putStrLn $ ipAddress ++ " " ++ show port ++ " Failed"
       testPort (n + 1) ipAddress port
-    Right val -> do
-      putStrLn $ ipAddress ++ " " ++ show val
-      return val
+    True -> return True
 
 render :: (Bool, (String, String)) -> String
 render (success, (url, _)) = url ++ " " ++ show success
 
 renderPort :: (Bool, (String, Int)) -> String
-renderPort (success, (url, _)) = url ++ " " ++ show success
+renderPort (success, (url, port)) =
+  url ++ " " ++ show port ++ " " ++ show success
 
 scan = do
   result <- mapM (\(url, needle) -> testSite 0 url needle) pairs
