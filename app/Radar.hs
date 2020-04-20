@@ -1,11 +1,11 @@
 module Main where
 
 import           System.Environment (getArgs)
+import           System.Exit        (ExitCode (ExitFailure), exitWith)
 
 import           Radar.Scan         (scan, scanPorts)
 import           Radar.Slack        (postToSlack)
 import           Secrets            (getSecret)
-import           System.Exit        (ExitCode (ExitFailure), exitWith)
 
 evaluate scanner = do
   slackChannel <- getSecret "TestAPI"

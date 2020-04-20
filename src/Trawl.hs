@@ -2,6 +2,7 @@
 
 module Trawl
   ( trawl
+  , uploadFile
   ) where
 
 import           Data.Aeson                (encode, object, (.=))
@@ -52,6 +53,12 @@ diskUsage secret machine endpoint = do
   submitDiskUsage "1KBlocks" (xs !! 1)
   where
     submitDiskUsage = submit secret machine endpoint "integer" "DiskUsage"
+
+uploadFile :: String -> String -> Maybe String -> String -> IO ()
+uploadFile secret machine endpoint filename = do
+  x <- readFile filename
+  submit secret machine endpoint "string" "File" "Uncompressed" x
+  print "Done submitting"
 
 trawl :: String -> String -> Maybe String -> IO ()
 trawl secret machine endpoint = do
