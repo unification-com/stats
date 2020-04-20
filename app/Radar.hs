@@ -19,7 +19,6 @@ evaluate scanner = do
           exitWith (ExitFailure 1)
         Right xs -> print xs
 
-
 fn :: [Char] -> [String] -> IO ()
 fn "internal" args = evaluate scanPorts
 fn _ _ = do
