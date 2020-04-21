@@ -2,18 +2,28 @@
 
 module Trawl
   ( trawl
+  , uploadFile
   ) where
 
 import           Data.Aeson                (encode, object, (.=))
 import           Network.HTTP.Client
 import           Network.HTTP.Client.TLS
 import           Network.HTTP.Types.Status (statusCode)
+import           System.FilePath.Posix     (splitFileName)
 
 import           Parsers.Common            (saltjq)
 
 ingestionEnpoint = "https://ingest-testnet.unification.io/ingest"
 
-submit :: String -> String -> Maybe String -> String -> String -> String -> String -> IO Int
+submit ::
+     String
+  -> String
+  -> Maybe String
+  -> String
+  -> String
+  -> String
+  -> String
+  -> IO Int
 submit secret machine endpoint datatype metric key sample = do
   manager <- newManager tlsManagerSettings
   let requestObject =
@@ -40,11 +50,13 @@ submit secret machine endpoint datatype metric key sample = do
     else putStrLn $ "200 OK"
   return code
   where
-    resolvedEndpoint = case endpoint of
-      Nothing -> ingestionEnpoint
-      Just x -> x
+    resolvedEndpoint =
+      case endpoint of
+        Nothing -> ingestionEnpoint
+        Just x  -> x
 
-ping secret machine endpoint = submit secret machine endpoint "string" "ping" "ping" "ping"
+ping secret machine endpoint =
+  submit secret machine endpoint "string" "ping" "ping" "ping"
 
 diskUsage secret machine endpoint = do
   xs <- saltjq "disk.usage" ["/", "1K-blocks"] ".local[$a] | .used,.[$b]"
@@ -52,6 +64,12 @@ diskUsage secret machine endpoint = do
   submitDiskUsage "1KBlocks" (xs !! 1)
   where
     submitDiskUsage = submit secret machine endpoint "integer" "DiskUsage"
+
+uploadFile :: String -> String -> Maybe String -> String -> IO ()
+uploadFile secret machine endpoint filename = do
+  x <- readFile filename
+  submit secret machine endpoint "string" "File" (snd $ splitFileName filename) x
+  print "Done submitting"
 
 trawl :: String -> String -> Maybe String -> IO ()
 trawl secret machine endpoint = do
