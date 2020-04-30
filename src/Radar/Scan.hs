@@ -20,18 +20,20 @@ pairs =
   , ( "https://rest-testnet.unification.io/staking/validators"
     , "operator_address")
   , ( "http://node1-testnet.unification.io:26660/status"
-    , "23be54f5d6fdf8cb49f434b9bc8762f725fe47a7")
+    , "f21bff4dec94d5ddb8dcbbc33011b7fd044c645b")
   , ( "http://node2-testnet.unification.io:26660/status"
-    , "2603d0e9d79424c8b0fa84f36dde89045cf14f53")
+    , "a838b19e758d27aa1c325f42aaa5aece76f05e6c")
+  , ( "http://node3-testnet.unification.io:26660/status"
+    , "c7fdd06a2243625b5b0fe35625373f03c35ad31a")
   , ( "http://seed1-testnet.unification.io:26660/status"
-    , "dcff5de69dcc170b28b6628a1336d420f7eb60c0")
+    , "9335920b7a35d80e0ff209252c501057e321d35e")
   , ("https://wallet-testnet.unification.io", "Web Wallet")
   ]
 
 ports =
-  [ ("172.31.38.249", 26656)
-  , ("172.31.36.108", 26656)
-  , ("172.31.33.80", 26656)
+  [ ("172.31.41.218", 26656)
+  , ("172.31.37.84", 26656)
+  , ("172.31.42.11", 26656)
   , ("35.188.75.191", 26656)
   ]
 

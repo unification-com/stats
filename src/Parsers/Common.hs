@@ -2,6 +2,7 @@ module Parsers.Common
   ( restEndpoint
   , curljq
   , saltjq
+  , runPython
   ) where
 
 import           Data.List      (intercalate)
@@ -46,3 +47,15 @@ saltCmd grain args query =
     jqArgs args =
       (\(x, y) -> "--arg " ++ [y] ++ " '" ++ x ++ "'") <$> (zip args vars)
     vars = take (length args) ['a' ..]
+
+runPython :: String -> IO [String]
+runPython inside = do
+  (_, Just hOut, _, hProc) <-
+    createProcess ((shell (shell_cmd)) {std_out = CreatePipe})
+  exitCode <- waitForProcess hProc
+  output <- hGetContents hOut
+  return $ removePunc <$> lines output
+  where
+    shell_cmd = "python3 -c '" ++ inside ++  "'"
+
+
