@@ -27,6 +27,10 @@ pairs =
     , "c7fdd06a2243625b5b0fe35625373f03c35ad31a")
   , ( "http://seed1-testnet.unification.io:26660/status"
     , "9335920b7a35d80e0ff209252c501057e321d35e")
+  , ( "https://api-tokenswap.unification.io/pingtokenswap"
+    , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
+  , ( "https://api-tokenswap.unification.io/pingtokenswap"
+    , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
   , ("https://wallet-testnet.unification.io", "Web Wallet")
   ]
 
