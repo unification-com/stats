@@ -20,9 +20,11 @@ evaluate scanner = do
         Right xs -> print xs
 
 fn :: [Char] -> [String] -> IO ()
-fn "internal" args = evaluate scanPorts
+fn "all" args = do
+  evaluate scan
+  evaluate scanPorts
 fn _ _ = do
-  print "internal"
+  print "all - HTTP and port scans"
   return $ ()
 
 main = do
