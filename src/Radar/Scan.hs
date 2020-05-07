@@ -19,26 +19,22 @@ pairs =
   , ("https://faucet-testnet.unification.io", "Faucet")
   , ( "https://rest-testnet.unification.io/staking/validators"
     , "operator_address")
-  , ( "http://node1-testnet.unification.io:26660/status"
-    , "f21bff4dec94d5ddb8dcbbc33011b7fd044c645b")
-  , ( "http://node2-testnet.unification.io:26660/status"
-    , "a838b19e758d27aa1c325f42aaa5aece76f05e6c")
-  , ( "http://node3-testnet.unification.io:26660/status"
-    , "c7fdd06a2243625b5b0fe35625373f03c35ad31a")
-  , ( "http://seed1-testnet.unification.io:26660/status"
-    , "9335920b7a35d80e0ff209252c501057e321d35e")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
-  , ("https://wallet-testnet.unification.io", "Web Wallet")
+  , ( "https://docs.unification.io"
+    , "Unification Mainchain Documentation")
   ]
 
 ports =
-  [ ("172.31.41.218", 26656)
-  , ("172.31.37.84", 26656)
-  , ("172.31.42.11", 26656)
-  , ("35.188.75.191", 26656)
+  [ ("172.31.37.186", 26656)
+  , ("172.31.41.60", 26656)
+  , ("10.0.0.94", 26656)
+  , ("10.0.0.65", 26656)
+  , ("172.31.40.139", 26656)
+  , ("172.31.39.250", 26656)
+  , ("10.0.0.219", 26656)
   ]
 
 fetchURL :: URL -> IO L8.ByteString
