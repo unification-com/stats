@@ -19,19 +19,10 @@ pairs =
   , ("https://faucet-testnet.unification.io", "Faucet")
   , ( "https://rest-testnet.unification.io/staking/validators"
     , "operator_address")
-  , ( "http://node1-testnet.unification.io:26660/status"
-    , "f21bff4dec94d5ddb8dcbbc33011b7fd044c645b")
-  , ( "http://node2-testnet.unification.io:26660/status"
-    , "a838b19e758d27aa1c325f42aaa5aece76f05e6c")
-  , ( "http://node3-testnet.unification.io:26660/status"
-    , "c7fdd06a2243625b5b0fe35625373f03c35ad31a")
-  , ( "http://seed1-testnet.unification.io:26660/status"
-    , "9335920b7a35d80e0ff209252c501057e321d35e")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
-  , ("https://wallet-testnet.unification.io", "Web Wallet")
   ]
 
 ports =
