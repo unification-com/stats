@@ -93,7 +93,7 @@ tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
   supplyLockedChange <- metricDX "supply" "locked"
   supplyTotalChange <- metricDX "supply" "total"
-  let tableHead = thead (th "Total" >> th "Amount in UND")
+  let tableHead = thead (th "Total" >> th "Amount in FUND")
   let lns =
         [ ("Supply Amount Change", (toHtml . undConvert) supplyAmountChange)
         , ("Supply Locked Change", (toHtml . undConvert) supplyLockedChange)
