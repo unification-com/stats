@@ -14,10 +14,11 @@ import           System.Process
 type URL = String
 
 pairs =
-  [ ( "https://explorer-testnet.unification.io"
+  [ ( "https://explorer.unification.io"
     , "Unification Mainchain Explorer")
-  , ("https://faucet-testnet.unification.io", "Faucet")
-  , ( "https://rest-testnet.unification.io/staking/validators"
+  , ( "https://rest.unification.io/staking/validators"
+    , "operator_address")
+  , ( "https://rest2.unification.io/staking/validators"
     , "operator_address")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
