@@ -20,7 +20,7 @@ pairs =
     , "operator_address")
   , ( "https://rest2.unification.io/staking/validators"
     , "operator_address")
-  , ( "https://rpc1.unification.io:26657/status"
+  , ( "http://rpc1.unification.io:26657/status"
     , "rpcrest-1")
   , ( "https://rpc2.unification.io:26657/status"
     , "rpcrest-2")
