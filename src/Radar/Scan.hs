@@ -14,11 +14,16 @@ import           System.Process
 type URL = String
 
 pairs =
-  [ ( "https://explorer-testnet.unification.io"
+  [ ( "https://explorer.unification.io"
     , "Unification Mainchain Explorer")
-  , ("https://faucet-testnet.unification.io", "Faucet")
-  , ( "https://rest-testnet.unification.io/staking/validators"
+  , ( "https://rest.unification.io/staking/validators"
     , "operator_address")
+  , ( "https://rest2.unification.io/staking/validators"
+    , "operator_address")
+  , ( "https://rpc1.unification.io:26657/status"
+    , "rpcrest-1")
+  , ( "https://rpc2.unification.io:26657/status"
+    , "rpcrest-2")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
@@ -28,13 +33,31 @@ pairs =
   ]
 
 ports =
-  [ ("172.31.37.186", 26656)
-  , ("172.31.41.60", 26656)
-  , ("10.0.0.94", 26656)
-  , ("10.0.0.65", 26656)
-  , ("172.31.40.139", 26656)
-  , ("172.31.39.250", 26656)
-  , ("10.0.0.219", 26656)
+  [ ("18.222.228.70", 26656)
+  , ("18.216.190.197", 26656)
+  , ("18.216.27.230", 26656)
+  , ("18.218.202.104", 26656)
+  , ("18.191.81.153", 26656)
+  , ("18.216.171.197", 26656)
+  , ("3.234.218.211", 26656)
+  , ("18.210.24.149", 26656)
+  , ("34.225.194.28", 26656)
+  , ("18.204.37.53", 26656)
+  , ("3.233.234.176", 26656)
+  , ("18.204.2.16", 26656)
+  , ("172.31.44.118", 26656)
+  , ("172.31.46.108", 26656)
+  , ("172.31.35.91", 26656)
+  , ("172.31.35.108", 26656)
+  , ("172.31.45.34", 26656)
+  , ("172.31.40.227", 26656)
+  , ("10.0.0.212", 26656)
+  , ("10.0.0.176", 26656)
+  , ("10.0.0.201", 26656)
+  , ("10.0.0.80", 26656)
+  , ("10.0.0.189", 26656)
+  , ("10.0.0.225", 26656)
+  , ("3.19.240.58", 26656)
   ]
 
 fetchURL :: URL -> IO L8.ByteString
