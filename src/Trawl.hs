@@ -13,7 +13,7 @@ import           System.FilePath.Posix     (splitFileName)
 
 import           Parsers.Common            (runPython)
 
-ingestionEnpoint = "https://ingest-testnet.unification.io/ingest"
+ingestionEnpoint = "https://ingest.unification.io/ingest"
 
 submit ::
      String

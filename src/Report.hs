@@ -53,14 +53,14 @@ gbConvert n = showFFloat (Just 2) (fromIntegral n / 1000000) ""
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
   where
-    x = "https://explorer-testnet.unification.io/account/" ++ acc
+    x = "https://explorer.unification.io/account/" ++ acc
 
 makeValidatorURL :: String -> Text -> Html
 makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
   where
     x =
       T.concat
-        [ T.pack "https://explorer-testnet.unification.io/validator/"
+        [ T.pack "https://explorer.unification.io/validator/"
         , T.pack acc
         ]
 
