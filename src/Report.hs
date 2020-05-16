@@ -24,6 +24,7 @@ import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (accounts, connectionString,
                                                   coreMetricsPath)
+import           Parsers.Account                 (queryMainchainAccount)
 import           Parsers.Validator               (Validator (..), readValidator)
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
@@ -188,8 +189,15 @@ writeMetric target value = do
   hClose outputHandle
 
 writeCoreMetrics = do
-  writeMetric "total-supply/index.html" "120000000"
-  writeMetric "circulating-supply/index.html" "64323577"
-  writeMetric "liquid-supply/index.html" "64323577"
+  locked <- queryMainchainAccount leftOversAccount
+  let circulating = totalSupply - locked
+  writeMetric "total-supply/index.html" $ show (totalSupply `Prelude.div` nund)
+  writeMetric "circulating-supply/index.html" $
+    show (circulating `Prelude.div` nund)
+  writeMetric "liquid-supply/index.html" $ show (circulating `Prelude.div` nund)
+  where
+    leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
+    nund = 1000000000
+    totalSupply = 120000000 * nund
 
 test = writeCoreMetrics
