@@ -190,14 +190,20 @@ writeMetric target value = do
 
 writeCoreMetrics = do
   locked <- queryMainchainAccount leftOversAccount
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  vs <- validators conn now
+  vxs <- mapM (\x -> readValidator conn x) vs
+  let sharesTotal = sum (shares <$> vxs)
+
   let circulating = totalSupply - locked
-  writeMetric "total-supply/index.html" $ show (totalSupply `Prelude.div` nund)
-  writeMetric "circulating-supply/index.html" $
-    show (circulating `Prelude.div` nund)
-  writeMetric "liquid-supply/index.html" $ show (circulating `Prelude.div` nund)
+  let liquid = circulating - (round sharesTotal :: Int)
+
+  writeMetric "total-supply/index.html" $ render totalSupply
+  writeMetric "circulating-supply/index.html" $ render circulating
+  writeMetric "liquid-supply/index.html" $ render liquid
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
     totalSupply = 120000000 * nund
-
-test = writeCoreMetrics
+    render x = show (x `Prelude.div` nund)
