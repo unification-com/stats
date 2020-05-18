@@ -1,6 +1,7 @@
 module Config
   ( accounts
   , connectionString
+  , coreMetricsPath
   ) where
 
 import           Data.List          (elemIndex)
@@ -43,3 +44,12 @@ connectionString = do
       "aws" -> return (encode "postgresql://postgres:password@localhost:5432/postgres")
   where
     encode = encodeUtf8 . T.pack
+
+
+coreMetricsPath = do
+  vars <- getEnvironment
+  case has vars of
+    Nothing -> return "/tmp"
+    (Just x) -> case x of
+      "warp" -> return "/tmp"
+      "aws" -> return "/home/deploy/src/coremetrics"

@@ -5,6 +5,7 @@ module Report
   , tableAccounts24H
   , tableValidators24H
   , tableDiskUsage
+  , writeCoreMetrics
   ) where
 
 import           Control.Monad                   (forM_)
@@ -21,11 +22,17 @@ import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
-import           Config                          (accounts, connectionString)
+import           Config                          (accounts, connectionString,
+                                                  coreMetricsPath)
+import           Parsers.Account                 (queryMainchainAccount)
 import           Parsers.Validator               (Validator (..), readValidator)
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
                                                   obtainSampleF)
+
+import           System.FilePath                 ((</>))
+import           System.IO                       (Handle, IOMode (WriteMode),
+                                                  hClose, hPutStrLn, openFile)
 
 validators :: Connection -> Window -> IO [String]
 validators c (a, b) = do
@@ -53,16 +60,13 @@ gbConvert n = showFFloat (Just 2) (fromIntegral n / 1000000) ""
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
   where
-    x = "https://explorer-testnet.unification.io/account/" ++ acc
+    x = "https://explorer.unification.io/account/" ++ acc
 
 makeValidatorURL :: String -> Text -> Html
 makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
   where
     x =
-      T.concat
-        [ T.pack "https://explorer-testnet.unification.io/validator/"
-        , T.pack acc
-        ]
+      T.concat [T.pack "https://explorer.unification.io/validator/", T.pack acc]
 
 metricDX metric feature = do
   now <- window
@@ -160,10 +164,10 @@ repr :: Maybe Int -> String
 repr Nothing  = "N/A"
 repr (Just x) = gbConvert x
 
-renderTable :: [String] -> [[ String ]] -> IO String
+renderTable :: [String] -> [[String]] -> IO String
 renderTable headers ds = do
   let tableHead = thead (mapM_ (th . toHtml) headers)
-  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs) ) ds
+  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs)) ds
   return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
 
 tableDiskUsage = do
@@ -172,7 +176,34 @@ tableDiskUsage = do
   l1 <- latestZQuery conn ("DiskUsage", "Used", now)
   l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
   let m3 = zipMap (fromList l1) (fromList l2)
-  let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b] ) <$> (M.toList m3)
+  let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b]) <$> (M.toList m3)
   let headers = ["Machine", "Used (GB)", "Total (GB)"]
   t <- renderTable headers xns
   return $ t
+
+writeMetric target value = do
+  basePath <- coreMetricsPath
+  let totalSupplyTarget = basePath </> target
+  outputHandle <- openFile totalSupplyTarget WriteMode
+  hPutStrLn outputHandle value
+  hClose outputHandle
+
+writeCoreMetrics = do
+  locked <- queryMainchainAccount leftOversAccount
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  vs <- validators conn now
+  vxs <- mapM (\x -> readValidator conn x) vs
+  let sharesTotal = sum (shares <$> vxs)
+
+  let circulating = totalSupply - locked
+  let liquid = circulating - (round sharesTotal :: Int)
+
+  writeMetric "total-supply/index.html" $ render totalSupply
+  writeMetric "circulating-supply/index.html" $ render circulating
+  writeMetric "liquid-supply/index.html" $ render liquid
+  where
+    leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
+    nund = 1000000000
+    totalSupply = 120000000 * nund
+    render x = show (x `Prelude.div` nund)

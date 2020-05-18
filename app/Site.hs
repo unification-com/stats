@@ -5,10 +5,11 @@ module Main where
 import           Data.Monoid (mappend)
 import           Hakyll
 import           Report      (tableAccounts24H, tableTotalSupply24H,
-                              tableValidators24H, tableDiskUsage)
+                              tableValidators24H, tableDiskUsage, writeCoreMetrics)
 
 main :: IO ()
 main = do
+  writeCoreMetrics
   dataAccounts24H <- tableAccounts24H
   dataValidators24H <- tableValidators24H
   dataTotalSupply24H <- tableTotalSupply24H
