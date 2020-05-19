@@ -3,7 +3,7 @@ module Main where
 import           System.Environment (getArgs)
 import           System.Exit        (ExitCode (ExitFailure), exitWith)
 
-import           Radar.Scan         (scan, scanPorts)
+import           Radar.Scan         (scan, scanMetrics, scanPorts)
 import           Radar.Slack        (postToSlack)
 import           Secrets            (getSecret)
 
@@ -22,9 +22,13 @@ evaluate scanner = do
 fn :: [Char] -> [String] -> IO ()
 fn "all" args = do
   evaluate scan
+  evaluate scanMetrics
   evaluate scanPorts
+fn "metrics" args = do
+  evaluate scanMetrics
 fn _ _ = do
-  print "all - HTTP and port scans"
+  print "all - HTTP, core metric and port scans"
+  print "metrics - only scan core metrirs"
   return $ ()
 
 main = do

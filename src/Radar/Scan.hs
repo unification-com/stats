@@ -1,5 +1,6 @@
 module Radar.Scan
   ( scan
+  , scanMetrics
   , scanPorts
   ) where
 
@@ -14,22 +15,16 @@ import           System.Process
 type URL = String
 
 pairs =
-  [ ( "https://explorer.unification.io"
-    , "Unification Mainchain Explorer")
-  , ( "https://rest.unification.io/staking/validators"
-    , "operator_address")
-  , ( "https://rest2.unification.io/staking/validators"
-    , "operator_address")
-  , ( "http://rpc1.unification.io:26657/status"
-    , "rpcrest-1")
-  , ( "https://rpc2.unification.io:26657/status"
-    , "rpcrest-2")
+  [ ("https://explorer.unification.io", "Unification Mainchain Explorer")
+  , ("https://rest.unification.io/staking/validators", "operator_address")
+  , ("https://rest2.unification.io/staking/validators", "operator_address")
+  , ("http://rpc1.unification.io:26657/status", "rpcrest-1")
+  , ("https://rpc2.unification.io:26657/status", "rpcrest-2")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
-  , ( "https://docs.unification.io"
-    , "Unification Mainchain Documentation")
+  , ("https://docs.unification.io", "Unification Mainchain Documentation")
   ]
 
 ports =
@@ -113,6 +108,16 @@ renderPort :: (Bool, (String, Int)) -> String
 renderPort (success, (url, port)) =
   url ++ " " ++ show port ++ " " ++ show success
 
+fetchCoreMetrics :: IO (Int, Int, Int)
+fetchCoreMetrics = do
+  total <- fetchURL "https://stats.unification.io/total-supply"
+  circulating <- fetchURL "https://stats.unification.io/circulating-supply/"
+  liquid <- fetchURL "https://stats.unification.io/liquid-supply/"
+  let totalInt = read (L8.unpack total) :: Int
+  let circulatingInt = read (L8.unpack circulating) :: Int
+  let liquidInt = read (L8.unpack liquid) :: Int
+  return $ (totalInt, circulatingInt, liquidInt)
+
 scan = do
   result <- mapM (\(url, needle) -> testSite 0 url needle) pairs
   let issue = any (\x -> x == False) result
@@ -128,3 +133,10 @@ scanPorts = do
   if issue
     then return $ Left c
     else return $ Right "Port scan is fine"
+
+scanMetrics = do
+  (totalInt, circulatingInt, liquidInt) <- fetchCoreMetrics
+  let nonIssue = (totalInt == 120000000) && (circulatingInt > liquidInt)
+  if nonIssue
+    then return $ Right "Core Metric scan is fine"
+    else return $ Left "Core Metric scan has an issue"
