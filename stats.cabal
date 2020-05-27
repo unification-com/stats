@@ -24,6 +24,7 @@ library
     , Trawl
   other-modules:
       Config
+    , Database.Accounts
     , Parsers.Account
     , Parsers.Common
     , Parsers.Validator

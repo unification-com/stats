@@ -7,7 +7,8 @@ module Sampler
   , injectS
   ) where
 
-import           Config                     (accounts, connectionString)
+import           Config                     (connectionString)
+import           Database.Accounts          as DA (Account (..), allAccounts)
 import           Parsers.Account            (queryMainchainAccount,
                                              queryRewards,
                                              queryValidatorOutstandingRewards,
@@ -87,6 +88,10 @@ queryAndInjectValidatorDetails validatorAccount = do
   print $ validatorAccount ++ ": " ++ show rewardsOutstanding
 
 sample = do
+  cs <- connectionString
+  conn <- connectPostgreSQL cs
+  allAccounts <- DA.allAccounts conn
+  let accounts = DA.address <$> allAccounts
   mapM_ queryAndInjectAccountDetails accounts
   injectSupply
   vs <- sampleValidators

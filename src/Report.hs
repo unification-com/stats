@@ -22,10 +22,11 @@ import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
-import           Config                          (accounts, connectionString,
+import           Config                          (connectionString,
                                                   coreMetricsPath)
+import           Database.Accounts               as DA (allAccounts, Account(..))
 import           Parsers.Account                 (queryMainchainAccount)
-import           Parsers.Validator               (Validator (..), readValidator)
+import           Parsers.Validator               as V (Validator (..), readValidator)
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
                                                   obtainSampleF)
@@ -76,6 +77,8 @@ metricDX metric feature = do
 tableAccounts24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
+  allAccounts <- DA.allAccounts conn
+  let accounts = DA.address <$> allAccounts
   balance <- mapM (\x -> obtainSample conn ("account", x, now)) accounts
   accruedRewards <- mapM (\x -> obtainSampleF conn ("rewards", x, now)) accounts
   let totalBalance = toHtml $ undConvert $ sum balance
@@ -112,15 +115,15 @@ tableValidators24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxs <- mapM (\x -> readValidator conn x) vs
+  vxs <- mapM (\x -> V.readValidator conn x) vs
   validatorRewards <-
     mapM
       (\x -> obtainSampleF conn ("rewards_validator", x, now))
-      (address <$> vxs)
+      (V.address <$> vxs)
   validatorRewardsOutstanding <-
     mapM
       (\x -> obtainSampleF conn ("rewards_outstanding_validator", x, now))
-      (address <$> vxs)
+      (V.address <$> vxs)
   let sharesTotal = sum (shares <$> vxs)
   let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
   let tableHead =
@@ -135,7 +138,7 @@ tableValidators24H = do
            td "N/A")
   let xns =
         zip6
-          (map (\v -> makeValidatorURL (address v) (moniker v)) vxs)
+          (map (\v -> makeValidatorURL (V.address v) (moniker v)) vxs)
           (map
              (\v -> toHtml $ showFFloat (Just 2) (shares v / 1000000000) "")
              vxs)
@@ -193,12 +196,10 @@ writeCoreMetrics = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxs <- mapM (\x -> readValidator conn x) vs
+  vxs <- mapM (\x -> V.readValidator conn x) vs
   let sharesTotal = sum (shares <$> vxs)
-
   let circulating = totalSupply - locked
   let liquid = circulating - (round sharesTotal :: Int)
-
   writeMetric "total-supply/index.html" $ render totalSupply
   writeMetric "circulating-supply/index.html" $ render circulating
   writeMetric "liquid-supply/index.html" $ render liquid
