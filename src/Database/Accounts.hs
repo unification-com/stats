@@ -2,6 +2,7 @@
 
 module Database.Accounts
   ( allAccounts
+  , Account(..)
   ) where
 
 import           Config                             (connectionString)
