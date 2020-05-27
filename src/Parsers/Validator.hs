@@ -9,7 +9,7 @@ module Parsers.Validator
 import           Data.Int                           (Int64)
 import           Data.Text                          (Text, pack)
 
-import           Config                             (accounts, connectionString)
+import           Config                             (connectionString)
 import           Parsers.Common                     (curljq, restEndpoint)
 
 import           Database.PostgreSQL.Simple

@@ -7,7 +7,7 @@ module Sampler
   , injectS
   ) where
 
-import           Config                     (accounts, connectionString)
+import           Config                     (connectionString)
 import           Parsers.Account            (queryMainchainAccount,
                                              queryRewards,
                                              queryValidatorOutstandingRewards,
