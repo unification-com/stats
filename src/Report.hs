@@ -24,9 +24,11 @@ import           Text.Blaze.Html5.Attributes     as A
 
 import           Config                          (connectionString,
                                                   coreMetricsPath)
-import           Database.Accounts               as DA (allAccounts, Account(..))
+import           Database.Accounts               as DA (Account (..),
+                                                        allAccounts)
 import           Parsers.Account                 (queryMainchainAccount)
-import           Parsers.Validator               as V (Validator (..), readValidator)
+import           Parsers.Validator               as V (Validator (..),
+                                                       readValidator)
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
                                                   obtainSampleF)
@@ -191,8 +193,9 @@ writeMetric target value = do
   hPutStrLn outputHandle value
   hClose outputHandle
 
-
-quickJSON a b c = "{\"total-supply\":" ++ a ++ ",\"circulating-supply\":" ++ b  ++ ",\"num-validators\":" ++ c ++ "}"
+quickJSON a b c =
+  "{\"total-supply\":" ++
+  a ++ ",\"circulating-supply\":" ++ b ++ ",\"num-validators\":" ++ c ++ "}"
 
 writeCoreMetrics = do
   locked <- queryMainchainAccount leftOversAccount
@@ -203,7 +206,11 @@ writeCoreMetrics = do
   let sharesTotal = sum (shares <$> vxs)
   let circulating = totalSupply - locked
   let liquid = circulating - (round sharesTotal :: Int)
-  let j = quickJSON (render totalSupply) (render circulating) (show $ Prelude.length vs)
+  let j =
+        quickJSON
+          (render totalSupply)
+          (render circulating)
+          (show $ Prelude.length vs)
   writeMetric "total-supply/index.html" $ render totalSupply
   writeMetric "circulating-supply/index.html" $ render circulating
   writeMetric "liquid-supply/index.html" $ render liquid
@@ -211,5 +218,5 @@ writeCoreMetrics = do
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
-    totalSupply = 120000000 * nund
+    totalSupply = 120799977 * nund
     render x = show (x `Prelude.div` nund)

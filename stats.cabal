@@ -19,6 +19,7 @@ library
       Radar.Scan
     , Radar.Slack
     , Report
+    , Richlist
     , Sampler
     , Secrets
     , Trawl
