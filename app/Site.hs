@@ -8,12 +8,13 @@ import           Hakyll
 import           Report      (tableAccounts24H, tableDiskUsage,
                               tableTotalSupply24H, tableValidators24H,
                               writeCoreMetrics)
-import           Richlist    (tableRichlist)
+import           Richlist    (tableRichlist, snapshotTime)
 
 main :: IO ()
 main = do
   writeCoreMetrics
   dataRichlist <- tableRichlist
+  dataSnapshotTime <- snapshotTime
   dataAccounts24H <- tableAccounts24H
   dataValidators24H <- tableValidators24H
   dataTotalSupply24H <- tableTotalSupply24H
@@ -43,6 +44,7 @@ main = do
       compile $ do
         let indexCtx =
               constField "title" "Stats" `mappend`
+              constField "dataSnapshotTime" dataSnapshotTime `mappend`
               constField "dataRichlist" dataRichlist `mappend`
               defaultContext
         getResourceBody >>= applyAsTemplate indexCtx >>=
