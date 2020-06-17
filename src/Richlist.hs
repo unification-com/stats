@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy            as B
 import           Data.Function                   (on)
 import           Data.List                       (sortBy)
 import           GHC.Generics                    (Generic)
+import           Numeric                         (showFFloat)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
@@ -63,6 +64,14 @@ instance FromJSON Account
 
 instance FromJSON Richlist.Value
 
+undConvert :: Integral a => a -> String
+undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
+
+makeURL :: String -> Html
+makeURL acc = a ! href (stringValue x) $ (toHtml acc)
+  where
+    x = "https://explorer.unification.io/account/" ++ acc
+
 readInt :: String -> Int
 readInt = read
 
@@ -102,7 +111,7 @@ richlist = do
       let zs = reverse (sortBy (compare `on` (\(a, b) -> b)) xs)
       return $ Just (take 100 zs)
 
-renderTable :: [String] -> [[String]] -> IO String
+renderTable :: [String] -> [[Html]] -> IO String
 renderTable headers ds = do
   let tableHead = thead (mapM_ (th . toHtml) headers)
   let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs)) ds
@@ -111,15 +120,15 @@ renderTable headers ds = do
 tableRichlist :: IO String
 tableRichlist = do
   xns <- richlist
-  let headers = ["Account Number", "Amount"]
+  let headers = ["Account", "Amount in FUND"]
   case xns of
     Nothing -> do
       t <- renderTable headers []
       return $ t
     Just (xs) -> do
-      t <- renderTable headers (mapper <$> xs)
+      t <- renderTable headers (map mapper xs)
       return $ t
   where
-    mapper (a, b) = [a, show b]
+    mapper (a, b) = [makeURL a, toHtml (undConvert b)]
 
 test = tableRichlist
