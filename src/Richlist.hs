@@ -4,6 +4,7 @@
 module Richlist
   ( tableRichlist
   , snapshotTime
+  , totalSupply
   ) where
 
 import           Data.Aeson
@@ -27,7 +28,8 @@ data Config =
 
 data AppState =
   AppState
-    { auth :: Auth
+    { auth   :: Auth
+    , supply :: Supply
     }
   deriving (Show, Generic)
 
@@ -50,6 +52,12 @@ data Value =
     }
   deriving (Show, Generic)
 
+data Supply =
+  Supply
+    { supply' :: [Coin]
+    }
+  deriving (Show, Generic)
+
 data Coin =
   Coin
     { amount :: Int
@@ -65,6 +73,9 @@ instance FromJSON Auth
 instance FromJSON Account
 
 instance FromJSON Richlist.Value
+
+instance FromJSON Supply where
+  parseJSON (Object v) = Supply <$> v .: "supply"
 
 undConvert :: Integral a => a -> String
 undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
@@ -140,4 +151,13 @@ snapshotTime = do
     Nothing  -> return "Error parsing data"
     Just (x) -> return (genesis_time x)
 
-test = snapshotTime
+totalSupply :: IO Int
+totalSupply = do
+  p <- parse
+  case p of
+    Nothing -> return defaultSupply
+    Just (c) -> return (amount $ Prelude.head $ supply' $ supply $ app_state c)
+  where
+    defaultSupply = 120799977119380000
+
+test = totalSupply
