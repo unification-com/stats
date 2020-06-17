@@ -3,6 +3,7 @@
 
 module Richlist
   ( tableRichlist
+  , snapshotTime
   ) where
 
 import           Data.Aeson
@@ -19,7 +20,8 @@ source = "/home/deploy/extract/genesis.json"
 
 data Config =
   Config
-    { app_state :: AppState
+    { app_state    :: AppState
+    , genesis_time :: String
     }
   deriving (Show, Generic)
 
@@ -131,4 +133,11 @@ tableRichlist = do
   where
     mapper (a, b) = [makeURL a, toHtml (undConvert b)]
 
-test = tableRichlist
+snapshotTime :: IO String
+snapshotTime = do
+  p <- parse
+  case p of
+    Nothing  -> return "Error parsing data"
+    Just (x) -> return (genesis_time x)
+
+test = snapshotTime
