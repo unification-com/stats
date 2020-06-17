@@ -2,13 +2,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Richlist
-  (
+  ( tableRichlist
   ) where
 
 import           Data.Aeson
-import           GHC.Generics         (Generic)
+import qualified Data.ByteString.Lazy            as B
+import           Data.Function                   (on)
+import           Data.List                       (sortBy)
+import           GHC.Generics                    (Generic)
+import           Text.Blaze.Html.Renderer.String (renderHtml)
+import           Text.Blaze.Html5                as H hiding (address, map)
+import           Text.Blaze.Html5.Attributes     as A
 
-import qualified Data.ByteString.Lazy as B
+source = "/home/deploy/extract/genesis.json"
 
 data Config =
   Config
@@ -63,10 +69,8 @@ readInt = read
 instance FromJSON Coin where
   parseJSON (Object v) = Coin <$> (readInt <$> v .: "amount")
 
-source = "/Users/indika/dev/stats/data/genesis-1591864502.json"
-
 jsonFile :: FilePath
-jsonFile = source
+jsonFile = Richlist.source
 
 getJSON :: IO B.ByteString
 getJSON = B.readFile jsonFile
@@ -77,5 +81,45 @@ parse = do
   let decoded = decode j
   return $ decoded
 
--- What am I doing?
-test = parse
+--TODO: A sanity check
+isolate :: Maybe Config -> Maybe [(String, Int)]
+isolate Nothing = Nothing
+isolate (Just c) = Just ret
+  where
+    accxs = accounts (auth (app_state c))
+    addxs = address <$> (Richlist.value <$> accxs)
+    mapper [] = 0
+    mapper xs = amount $ Prelude.head xs
+    coinxs = map mapper (coins <$> (Richlist.value <$> accxs))
+    ret = zip addxs coinxs
+
+richlist = do
+  p <- parse
+  let iso = isolate p
+  case iso of
+    Nothing -> return $ Nothing
+    Just (xs) -> do
+      let zs = reverse (sortBy (compare `on` (\(a, b) -> b)) xs)
+      return $ Just (take 100 zs)
+
+renderTable :: [String] -> [[String]] -> IO String
+renderTable headers ds = do
+  let tableHead = thead (mapM_ (th . toHtml) headers)
+  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs)) ds
+  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
+
+tableRichlist :: IO String
+tableRichlist = do
+  xns <- richlist
+  let headers = ["Account Number", "Amount"]
+  case xns of
+    Nothing -> do
+      t <- renderTable headers []
+      return $ t
+    Just (xs) -> do
+      t <- renderTable headers (mapper <$> xs)
+      return $ t
+  where
+    mapper (a, b) = [a, show b]
+
+test = tableRichlist
