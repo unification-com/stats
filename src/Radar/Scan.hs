@@ -136,7 +136,7 @@ scanPorts = do
 
 scanMetrics = do
   (totalInt, circulatingInt, liquidInt) <- fetchCoreMetrics
-  let nonIssue = (totalInt == 120000000) && (circulatingInt > liquidInt)
+  let nonIssue = (totalInt > 120000000) && (circulatingInt > liquidInt)
   if nonIssue
     then return $ Right "Core Metric scan is fine"
     else return $ Left "Core Metric scan has an issue"
