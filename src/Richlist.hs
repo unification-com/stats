@@ -41,7 +41,8 @@ data Auth =
 
 data Account =
   Account
-    { value :: Richlist.Value
+    { accountType :: String
+    , value       :: Richlist.Value
     }
   deriving (Show, Generic)
 
@@ -70,7 +71,8 @@ instance FromJSON AppState
 
 instance FromJSON Auth
 
-instance FromJSON Account
+instance FromJSON Account where
+  parseJSON (Object v) = Account <$> v .: "type" <*> v .: "value"
 
 instance FromJSON Richlist.Value
 
@@ -109,7 +111,8 @@ isolate Nothing = Nothing
 isolate (Just c) = Just ret
   where
     accxs = accounts (auth (app_state c))
-    addxs = address <$> (Richlist.value <$> accxs)
+    standardAccounts = filter (\x -> accountType x == "cosmos-sdk/Account") accxs
+    addxs = address <$> (Richlist.value <$> standardAccounts)
     mapper [] = 0
     mapper xs = amount $ Prelude.head xs
     coinxs = map mapper (coins <$> (Richlist.value <$> accxs))
