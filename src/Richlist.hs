@@ -13,16 +13,18 @@ import           Data.Function                   (on)
 import           Data.List                       (sortBy)
 import           GHC.Generics                    (Generic)
 import           Numeric                         (showFFloat)
+import           System.IO                       (readFile)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
 source = "/home/deploy/extract/genesis.json"
 
+timestamp = "/home/deploy/extract/timestamp"
+
 data Config =
   Config
-    { app_state    :: AppState
-    , genesis_time :: String
+    { app_state :: AppState
     }
   deriving (Show, Generic)
 
@@ -115,7 +117,7 @@ isolate (Just c) = Just ret
       filter (\x -> accountType x == "cosmos-sdk/Account") accxs
     nonEmptyAccounts =
       filter (\x -> length (coins (Richlist.value x)) > 0) standardAccounts
-    addxs = address <$> (Richlist.value <$> nonEmptyAccounts)
+    addxs = Richlist.address <$> (Richlist.value <$> nonEmptyAccounts)
     mapper [] = 0
     mapper xs = amount $ Prelude.head xs
     coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
@@ -152,10 +154,10 @@ tableRichlist = do
 
 snapshotTime :: IO String
 snapshotTime = do
-  p <- parse
-  case p of
-    Nothing  -> return "Error parsing data"
-    Just (x) -> return (genesis_time x)
+  x <- readFile timestamp
+  return $ cleanString x
+  where
+    cleanString str = [x | x <- str, x /= ' ' && x /= '\n']
 
 totalSupply :: IO Int
 totalSupply = do
