@@ -6,6 +6,7 @@ module Report
   , tableValidators24H
   , tableDiskUsage
   , writeCoreMetrics
+  , coreTable
   ) where
 
 import           Control.Monad                   (forM_)
@@ -220,3 +221,31 @@ writeCoreMetrics = do
     nund = 1000000000
     totalSupply = 120799977 * nund
     render x = show (x `Prelude.div` nund)
+
+coreTable = do
+  locked <- queryMainchainAccount leftOversAccount
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  vs <- validators conn now
+  vxs <- mapM (\x -> V.readValidator conn x) vs
+  let sharesTotal = sum (shares <$> vxs)
+  let circulating = totalSupply - locked
+  let sharesTotalRounded = round sharesTotal :: Int
+  let liquid = circulating - sharesTotalRounded
+  let headers = ["Metric", "Amount in FUND"]
+  let xns =
+        [ ["Total Supply", render totalSupply]
+        , ["Admin FUND", render locked]
+        , ["Circulating Supply", render circulating]
+        , ["Staked FUND", render sharesTotalRounded]
+        , ["Liquid Supply", render liquid]
+        ]
+  t <- renderTable headers xns
+  return $ t
+  where
+    leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
+    nund = 1000000000
+    totalSupply = 120799977 * nund
+    render x = show (x `Prelude.div` nund)
+
+test = coreTable
