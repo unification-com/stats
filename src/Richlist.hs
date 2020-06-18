@@ -111,11 +111,14 @@ isolate Nothing = Nothing
 isolate (Just c) = Just ret
   where
     accxs = accounts (auth (app_state c))
-    standardAccounts = filter (\x -> accountType x == "cosmos-sdk/Account") accxs
-    addxs = address <$> (Richlist.value <$> standardAccounts)
+    standardAccounts =
+      filter (\x -> accountType x == "cosmos-sdk/Account") accxs
+    nonEmptyAccounts =
+      filter (\x -> length (coins (Richlist.value x)) > 0) standardAccounts
+    addxs = address <$> (Richlist.value <$> nonEmptyAccounts)
     mapper [] = 0
     mapper xs = amount $ Prelude.head xs
-    coinxs = map mapper (coins <$> (Richlist.value <$> accxs))
+    coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
     ret = zip addxs coinxs
 
 richlist = do
