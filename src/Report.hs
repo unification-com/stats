@@ -4,13 +4,14 @@ module Report
   ( tableTotalSupply24H
   , tableAccounts24H
   , tableValidators24H
+  , tableValidators24HLite
   , tableDiskUsage
   , writeCoreMetrics
   , coreTable
   ) where
 
 import           Control.Monad                   (forM_)
-import           Data.List                       (zip6)
+import           Data.List                       (zip4, zip6)
 import           Data.Map.Strict                 as M (Map, fromList, keys,
                                                        lookup, toList, union)
 import           Data.Text                       as T hiding (map)
@@ -157,6 +158,32 @@ tableValidators24H = do
           (\(a, b, c, d, e, f) ->
              tr (td a >> td b >> td c >> td d >> td e >> td f))
           xns
+  return $
+    renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
+
+tableValidators24HLite = do
+  now <- window
+  conn <- connectionString >>= connectPostgreSQL
+  vs <- validators conn now
+  vxs <- mapM (\x -> V.readValidator conn x) vs
+  let sharesTotal = sum (shares <$> vxs)
+  let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
+  let tableHead =
+        thead
+          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
+  let totals = tr (td "Total" >> td sharesTotalStr >> td "100.00" >> td "N/A")
+  let xns =
+        zip4
+          (map (\v -> makeValidatorURL (V.address v) (moniker v)) vxs)
+          (map
+             (\v -> toHtml $ showFFloat (Just 2) (shares v / 1000000000) "")
+             vxs)
+          (map
+             (\v ->
+                toHtml $ showFFloat (Just 2) (shares v / sharesTotal * 100) "")
+             vxs)
+          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
+  let rows = mapM_ (\(a, b, c, d) -> tr (td a >> td b >> td c >> td d)) xns
   return $
     renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
 
