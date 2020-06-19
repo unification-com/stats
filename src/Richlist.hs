@@ -11,6 +11,7 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy            as B
 import           Data.Function                   (on)
 import           Data.List                       (sortBy)
+import           Data.Time.Clock.POSIX           (posixSecondsToUTCTime)
 import           GHC.Generics                    (Generic)
 import           Numeric                         (showFFloat)
 import           System.IO                       (readFile)
@@ -155,9 +156,8 @@ tableRichlist = do
 snapshotTime :: IO String
 snapshotTime = do
   x <- readFile timestamp
-  return $ cleanString x
-  where
-    cleanString str = [x | x <- str, x /= ' ' && x /= '\n']
+  let xInt = read x :: Int
+  return $ show (posixSecondsToUTCTime (fromIntegral xInt))
 
 totalSupply :: IO Int
 totalSupply = do
