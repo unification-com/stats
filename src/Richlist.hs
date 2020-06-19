@@ -11,18 +11,21 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy            as B
 import           Data.Function                   (on)
 import           Data.List                       (sortBy)
+import           Data.Time.Clock.POSIX           (posixSecondsToUTCTime)
 import           GHC.Generics                    (Generic)
 import           Numeric                         (showFFloat)
+import           System.IO                       (readFile)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
 source = "/home/deploy/extract/genesis.json"
 
+timestamp = "/home/deploy/extract/timestamp"
+
 data Config =
   Config
-    { app_state    :: AppState
-    , genesis_time :: String
+    { app_state :: AppState
     }
   deriving (Show, Generic)
 
@@ -41,7 +44,8 @@ data Auth =
 
 data Account =
   Account
-    { value :: Richlist.Value
+    { accountType :: String
+    , value       :: Richlist.Value
     }
   deriving (Show, Generic)
 
@@ -70,7 +74,8 @@ instance FromJSON AppState
 
 instance FromJSON Auth
 
-instance FromJSON Account
+instance FromJSON Account where
+  parseJSON (Object v) = Account <$> v .: "type" <*> v .: "value"
 
 instance FromJSON Richlist.Value
 
@@ -109,10 +114,14 @@ isolate Nothing = Nothing
 isolate (Just c) = Just ret
   where
     accxs = accounts (auth (app_state c))
-    addxs = address <$> (Richlist.value <$> accxs)
+    standardAccounts =
+      filter (\x -> accountType x == "cosmos-sdk/Account") accxs
+    nonEmptyAccounts =
+      filter (\x -> length (coins (Richlist.value x)) > 0) standardAccounts
+    addxs = Richlist.address <$> (Richlist.value <$> nonEmptyAccounts)
     mapper [] = 0
     mapper xs = amount $ Prelude.head xs
-    coinxs = map mapper (coins <$> (Richlist.value <$> accxs))
+    coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
     ret = zip addxs coinxs
 
 richlist = do
@@ -146,10 +155,9 @@ tableRichlist = do
 
 snapshotTime :: IO String
 snapshotTime = do
-  p <- parse
-  case p of
-    Nothing  -> return "Error parsing data"
-    Just (x) -> return (genesis_time x)
+  x <- readFile timestamp
+  let xInt = read x :: Int
+  return $ show (posixSecondsToUTCTime (fromIntegral xInt))
 
 totalSupply :: IO Int
 totalSupply = do

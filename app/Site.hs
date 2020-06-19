@@ -5,18 +5,20 @@ module Main where
 import           Data.Monoid (mappend)
 import           Hakyll
 
-import           Report      (tableAccounts24H, tableDiskUsage,
+import           Report      (coreTable, tableAccounts24H, tableDiskUsage,
                               tableTotalSupply24H, tableValidators24H,
-                              writeCoreMetrics)
-import           Richlist    (tableRichlist, snapshotTime)
+                              tableValidators24HLite, writeCoreMetrics)
+import           Richlist    (snapshotTime, tableRichlist)
 
 main :: IO ()
 main = do
   writeCoreMetrics
   dataRichlist <- tableRichlist
   dataSnapshotTime <- snapshotTime
+  dataCoreTable <- coreTable
   dataAccounts24H <- tableAccounts24H
   dataValidators24H <- tableValidators24H
+  dataValidators24H <- tableValidators24HLite
   dataTotalSupply24H <- tableTotalSupply24H
   dataDiskUsage <- tableDiskUsage
   hakyll $ do
@@ -45,6 +47,8 @@ main = do
         let indexCtx =
               constField "title" "Stats" `mappend`
               constField "dataSnapshotTime" dataSnapshotTime `mappend`
+              constField "dataCoreTable" dataCoreTable `mappend`
+              constField "dataValidators24H" dataValidators24H `mappend`
               constField "dataRichlist" dataRichlist `mappend`
               defaultContext
         getResourceBody >>= applyAsTemplate indexCtx >>=
