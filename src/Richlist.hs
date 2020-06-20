@@ -31,8 +31,9 @@ data Config =
 
 data AppState =
   AppState
-    { auth   :: Auth
-    , supply :: Supply
+    { auth    :: Auth
+    , supply  :: Supply
+    , staking :: Staking
     }
   deriving (Show, Generic)
 
@@ -62,9 +63,23 @@ data Supply =
     }
   deriving (Show, Generic)
 
+data Staking =
+  Staking
+    { delegations :: [Delegation]
+    }
+  deriving (Show, Generic)
+
 data Coin =
   Coin
     { amount :: Int
+    }
+  deriving (Show, Generic)
+
+data Delegation =
+  Delegation
+    { delegator_address :: String
+    , shares            :: Double
+    , validator_address :: String
     }
   deriving (Show, Generic)
 
@@ -72,10 +87,17 @@ instance FromJSON Config
 
 instance FromJSON AppState
 
+instance FromJSON Staking
+
 instance FromJSON Auth
 
 instance FromJSON Account where
   parseJSON (Object v) = Account <$> v .: "type" <*> v .: "value"
+
+instance FromJSON Delegation where
+  parseJSON (Object v) =
+    Delegation <$> v .: "delegator_address" <*> (readDouble <$> v .: "shares") <*>
+    v .: "validator_address"
 
 instance FromJSON Richlist.Value
 
@@ -89,6 +111,9 @@ makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
   where
     x = "https://explorer.unification.io/account/" ++ acc
+
+readDouble :: String -> Double
+readDouble = read
 
 readInt :: String -> Int
 readInt = read
@@ -168,4 +193,4 @@ totalSupply = do
   where
     defaultSupply = 120799977119380000
 
-test = totalSupply
+test = parse
