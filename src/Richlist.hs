@@ -175,6 +175,7 @@ userAccounts c = zip addxs coinxs
     mapper xs = amount $ Prelude.head xs
     coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
 
+topFUNDHolders :: IO [(String, Double, Double)]
 topFUNDHolders = do
   parsed <- parse
   case parsed of
