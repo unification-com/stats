@@ -7,7 +7,7 @@ import           Hakyll
 
 import           Report      (coreTable, tableAccounts24H, tableDiskUsage,
                               tableTotalSupply24H, tableValidators24H,
-                              tableValidators24HLite, writeCoreMetrics)
+                              tableValidators24HLite, tableRewards, writeCoreMetrics)
 import           Richlist    (snapshotTime, tableRichlist)
 
 main :: IO ()
@@ -16,6 +16,7 @@ main = do
   dataRichlist <- tableRichlist
   dataSnapshotTime <- snapshotTime
   dataCoreTable <- coreTable
+  dataRewards <- tableRewards
   dataAccounts24H <- tableAccounts24H
   dataValidators24H <- tableValidators24H
   dataValidators24H <- tableValidators24HLite
@@ -49,6 +50,7 @@ main = do
               constField "dataSnapshotTime" dataSnapshotTime `mappend`
               constField "dataCoreTable" dataCoreTable `mappend`
               constField "dataValidators24H" dataValidators24H `mappend`
+              constField "dataRewards" dataRewards `mappend`
               constField "dataRichlist" dataRichlist `mappend`
               defaultContext
         getResourceBody >>= applyAsTemplate indexCtx >>=

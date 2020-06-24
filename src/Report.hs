@@ -6,6 +6,7 @@ module Report
   , tableValidators24H
   , tableValidators24HLite
   , tableDiskUsage
+  , tableRewards
   , writeCoreMetrics
   , coreTable
   ) where
@@ -16,8 +17,8 @@ import           Data.List                       (sortBy, zip4, zip6)
 import           Data.Map.Strict                 as M (Map, fromList, keys,
                                                        lookup, toList, union)
 import           Data.Text                       as T hiding (map)
-import           Data.Time.Clock                 (UTCTime, addUTCTime,
-                                                  getCurrentTime)
+import           Data.Time.Clock                 (NominalDiffTime, UTCTime,
+                                                  addUTCTime, getCurrentTime)
 import           Database.PostgreSQL.Simple
 import           Numeric                         (showFFloat)
 
@@ -49,9 +50,10 @@ validators c (a, b) = do
     [show a, show b] :: IO [Only String]
   return $ fromOnly <$> a
 
-window :: IO Window
-window = do
+window :: Int -> IO Window
+window days = do
   now <- getCurrentTime
+  let seconds = realToFrac (-3600 * 24 * days)
   return $ (addUTCTime (-3600 * 24) now, now)
 
 undConvert :: Integral a => a -> String
@@ -75,12 +77,12 @@ makeValidatorURL acc m = a ! href (textValue x) $ (toHtml m)
       T.concat [T.pack "https://explorer.unification.io/validator/", T.pack acc]
 
 metricDX metric feature = do
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   obtainSample conn (metric, feature, now)
 
 tableAccounts24H = do
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   allAccounts <- DA.allAccounts conn
   let accounts = DA.address <$> allAccounts
@@ -117,7 +119,7 @@ tableTotalSupply24H = do
     c ln = tr (td (fst ln) >> td (snd ln))
 
 tableValidators24H = do
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxsRaw <- mapM (\x -> V.readValidator conn x) vs
@@ -164,7 +166,7 @@ tableValidators24H = do
     renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
 
 tableValidators24HLite = do
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxsRaw <- mapM (\x -> V.readValidator conn x) vs
@@ -207,7 +209,7 @@ renderTable headers ds = do
   return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
 
 tableDiskUsage = do
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   l1 <- latestZQuery conn ("DiskUsage", "Used", now)
   l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
@@ -230,7 +232,7 @@ quickJSON a b c =
 
 writeCoreMetrics = do
   locked <- queryMainchainAccount leftOversAccount
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> V.readValidator conn x) vs
@@ -249,12 +251,13 @@ writeCoreMetrics = do
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
+    -- TODO: Get this dynamically
     totalSupply = 120799977 * nund
     render x = show (x `Prelude.div` nund)
 
 coreTable = do
   locked <- queryMainchainAccount leftOversAccount
-  now <- window
+  now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> V.readValidator conn x) vs
@@ -275,7 +278,21 @@ coreTable = do
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
+    -- TODO: Get this dynamically
     totalSupply = 120799977 * nund
     render x = show (x `Prelude.div` nund)
 
-test = coreTable
+tableRewards = do
+  now <- window 7
+  conn <- connectionString >>= connectPostgreSQL
+  x <- obtainSample conn ("supply", "amount", now)
+  let daily = fromIntegral x / nund
+  let annual = daily * 365
+  let headers = ["Period", "Reward in UND"]
+  let xns = [["Daily", show daily], ["Annual Projection", show annual]]
+  t <- renderTable headers xns
+  return $ t
+  where
+    nund = 1000000000
+
+test = tableRewards
