@@ -11,7 +11,8 @@ module Report
   ) where
 
 import           Control.Monad                   (forM_)
-import           Data.List                       (zip4, zip6)
+import           Data.Function                   (on)
+import           Data.List                       (sortBy, zip4, zip6)
 import           Data.Map.Strict                 as M (Map, fromList, keys,
                                                        lookup, toList, union)
 import           Data.Text                       as T hiding (map)
@@ -119,7 +120,8 @@ tableValidators24H = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxs <- mapM (\x -> V.readValidator conn x) vs
+  vxsRaw <- mapM (\x -> V.readValidator conn x) vs
+  let vxs = sortBy (flip (compare `on` shares)) vxsRaw
   validatorRewards <-
     mapM
       (\x -> obtainSampleF conn ("rewards_validator", x, now))
@@ -165,7 +167,8 @@ tableValidators24HLite = do
   now <- window
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxs <- mapM (\x -> V.readValidator conn x) vs
+  vxsRaw <- mapM (\x -> V.readValidator conn x) vs
+  let vxs = sortBy (flip (compare `on` shares)) vxsRaw
   let sharesTotal = sum (shares <$> vxs)
   let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
   let tableHead =
