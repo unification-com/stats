@@ -288,7 +288,7 @@ tableRewards = do
   x <- obtainSample conn ("supply", "amount", now)
   let daily = fromIntegral x / nund
   let annual = daily * 365
-  let headers = ["Period", "Reward in UND"]
+  let headers = ["Period", "FUND Reward"]
   let xns = [["Daily", show daily], ["Annual Projection", show annual]]
   t <- renderTable headers xns
   return $ t
