@@ -8,18 +8,17 @@ module Richlist
   ) where
 
 import           Data.Aeson
-import qualified Data.ByteString.Lazy            as B
-import           Data.Function                   (on)
-import           Data.List                       (sortBy)
-import           Data.Map                        (Map, empty, findWithDefault,
-                                                  insertWith, lookup, toList)
-import           Data.Time.Clock.POSIX           (posixSecondsToUTCTime)
-import           GHC.Generics                    (Generic)
-import           Numeric                         (showFFloat)
-import           System.IO                       (readFile)
-import           Text.Blaze.Html.Renderer.String (renderHtml)
-import           Text.Blaze.Html5                as H hiding (address, map)
-import           Text.Blaze.Html5.Attributes     as A
+import qualified Data.ByteString.Lazy  as B
+import           Data.Function         (on)
+import           Data.List             (sortBy)
+import           Data.Map              (Map, empty, findWithDefault, insertWith,
+                                        lookup, toList)
+import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import           GHC.Generics          (Generic)
+import           Numeric               (showFFloat)
+import           Renderer              (makeURL, percentage, renderTable,
+                                        undConvertD)
+import           System.IO             (readFile)
 
 source = "/home/deploy/extract/genesis.json"
 
@@ -109,17 +108,6 @@ instance FromJSON Supply where
 undConvert :: Integral a => a -> String
 undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
 
-undConvertD :: RealFloat a => a -> String
-undConvertD n = showFFloat (Just 2) (n / 1000000000) ""
-
-percentage :: RealFloat a => a -> String
-percentage n = showFFloat (Just 2) n ""
-
-makeURL :: String -> Html
-makeURL acc = a ! href (stringValue x) $ (toHtml acc)
-  where
-    x = "https://explorer.unification.io/account/" ++ acc
-
 readDouble :: String -> Double
 readDouble = read
 
@@ -140,12 +128,6 @@ parse = do
   j <- getJSON
   let decoded = decode j
   return $ decoded
-
-renderTable :: [String] -> [[Html]] -> IO String
-renderTable headers ds = do
-  let tableHead = thead (mapM_ (th . toHtml) headers)
-  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs)) ds
-  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
 
 snapshotTime :: IO String
 snapshotTime = do
@@ -201,8 +183,6 @@ tableRichlist :: IO String
 tableRichlist = do
   xns <- topFUNDHolders
   let headers = ["Account", "Amount in FUND", "Staked %"]
-  t <- renderTable headers (map mapper xns)
-  return $ t
+  return $ renderTable headers (map mapper xns)
   where
-    mapper (a, b, c) =
-      [makeURL a, toHtml (undConvertD b), toHtml (percentage c)]
+    mapper (a, b, c) = [makeURL a, undConvertD b, percentage c]
