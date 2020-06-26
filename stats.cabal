@@ -30,6 +30,7 @@ library
     , Parsers.Common
     , Parsers.Validator
     , Queries
+    , Renderer
   build-depends:       
       base
     , blaze-html
