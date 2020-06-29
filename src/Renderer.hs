@@ -6,6 +6,7 @@ module Renderer
   , percentage
   , undConvertD
   , undCommaSeperate
+  , undCommaSeperateZ
   ) where
 
 import           Data.List                       (intercalate, reverse)
@@ -15,13 +16,17 @@ import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
 
-undCommaSeperate :: RealFloat a => a -> Html
-undCommaSeperate n = toHtml $ h ++ t
+commaSeperate x = h ++ t
   where
-    x = truncate (n / 1000000000)
     sp = break (== '.') $ show x
     h = reverse (intercalate "," $ chunksOf 3 $ reverse $ fst sp)
     t = snd sp
+
+undCommaSeperate :: RealFloat a => a -> Html
+undCommaSeperate n = toHtml $ commaSeperate (truncate (n / 1000000000))
+
+undCommaSeperateZ :: Int -> Html
+undCommaSeperateZ n = toHtml $ commaSeperate (n `Prelude.div` 1000000000)
 
 undConvertD :: RealFloat a => a -> Html
 undConvertD n = toHtml $ showFFloat (Just 2) (n / 1000000000) ""

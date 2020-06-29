@@ -22,6 +22,9 @@ import           Data.Time.Clock                 (NominalDiffTime, UTCTime,
 import           Database.PostgreSQL.Simple
 import           Numeric                         (showFFloat)
 
+import           System.FilePath                 ((</>))
+import           System.IO                       (Handle, IOMode (WriteMode),
+                                                  hClose, hPutStrLn, openFile)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
@@ -36,10 +39,7 @@ import           Parsers.Validator               as V (Validator (..),
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
                                                   obtainSampleF)
-
-import           System.FilePath                 ((</>))
-import           System.IO                       (Handle, IOMode (WriteMode),
-                                                  hClose, hPutStrLn, openFile)
+import           Renderer                        (renderTable, undCommaSeperateZ)
 
 validators :: Connection -> Window -> IO [String]
 validators c (a, b) = do
@@ -216,7 +216,7 @@ tableDiskUsage = do
   let m3 = zipMap (fromList l1) (fromList l2)
   let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b]) <$> (M.toList m3)
   let headers = ["Machine", "Used (GB)", "Total (GB)"]
-  t <- renderTable headers xns
+  t <- Report.renderTable headers xns
   return $ t
 
 writeMetric target value = do
@@ -267,20 +267,18 @@ coreTable = do
   let liquid = circulating - sharesTotalRounded
   let headers = ["Metric", "Amount in FUND"]
   let xns =
-        [ ["Total Supply", render totalSupply]
-        , ["Admin FUND", render locked]
-        , ["Circulating Supply", render circulating]
-        , ["Staked FUND", render sharesTotalRounded]
-        , ["Liquid Supply", render liquid]
+        [ ["Total Supply", undCommaSeperateZ totalSupply]
+        , ["Admin FUND", undCommaSeperateZ locked]
+        , ["Circulating Supply", undCommaSeperateZ circulating]
+        , ["Staked FUND", undCommaSeperateZ sharesTotalRounded]
+        , ["Liquid Supply", undCommaSeperateZ liquid]
         ]
-  t <- renderTable headers xns
-  return $ t
+  return $ Renderer.renderTable headers xns
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
     -- TODO: Get this dynamically
     totalSupply = 120799977 * nund
-    render x = show (x `Prelude.div` nund)
 
 tableRewards = do
   now <- window 7
@@ -290,7 +288,7 @@ tableRewards = do
   let annual = daily * 365
   let headers = ["Period", "FUND Reward"]
   let xns = [["Daily", show daily], ["Annual Projection", show annual]]
-  t <- renderTable headers xns
+  t <- Report.renderTable headers xns
   return $ t
   where
     nund = 1000000000
