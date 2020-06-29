@@ -16,8 +16,7 @@ import           Data.Map              (Map, empty, findWithDefault, insertWith,
 import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import           GHC.Generics          (Generic)
 import           Numeric               (showFFloat)
-import           Renderer              (makeURL, percentage, renderTable,
-                                        undConvertD)
+import           Renderer              (makeURL, percentage, renderTable, undCommaSeperate)
 import           System.IO             (readFile)
 
 source = "/home/deploy/extract/genesis.json"
@@ -185,4 +184,4 @@ tableRichlist = do
   let headers = ["Account", "Amount in FUND", "Staked %"]
   return $ renderTable headers (map mapper xns)
   where
-    mapper (a, b, c) = [makeURL a, undConvertD b, percentage c]
+    mapper (a, b, c) = [makeURL a, undCommaSeperate b, percentage c]

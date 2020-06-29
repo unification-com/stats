@@ -49,6 +49,7 @@ library
     , process
     , text
     , time
+    , split
     , SVGFonts
     -- Radar requirements
     , aeson

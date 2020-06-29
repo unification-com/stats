@@ -5,12 +5,23 @@ module Renderer
   , makeURL
   , percentage
   , undConvertD
+  , undCommaSeperate
   ) where
 
+import           Data.List                       (intercalate, reverse)
+import           Data.List.Split                 (chunksOf)
 import           Numeric                         (showFFloat)
 import           Text.Blaze.Html.Renderer.String (renderHtml)
 import           Text.Blaze.Html5                as H hiding (address, map)
 import           Text.Blaze.Html5.Attributes     as A
+
+undCommaSeperate :: RealFloat a => a -> Html
+undCommaSeperate n = toHtml $ h ++ t
+  where
+    x = truncate (n / 1000000000)
+    sp = break (== '.') $ show x
+    h = reverse (intercalate "," $ chunksOf 3 $ reverse $ fst sp)
+    t = snd sp
 
 undConvertD :: RealFloat a => a -> Html
 undConvertD n = toHtml $ showFFloat (Just 2) (n / 1000000000) ""
