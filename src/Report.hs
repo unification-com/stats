@@ -39,7 +39,10 @@ import           Parsers.Validator               as V (Validator (..),
 import           Queries                         (FeatureQuery, Window,
                                                   latestZQuery, obtainSample,
                                                   obtainSampleF)
-import           Renderer                        (renderTable, undCommaSeperateZ)
+import           Renderer                        (percentage, renderTable,
+                                                  undCommaSeperate,
+                                                  undCommaSeperateZ,
+                                                  undConvertF, undConvertZ)
 
 validators :: Connection -> Window -> IO [String]
 validators c (a, b) = do
@@ -88,35 +91,33 @@ tableAccounts24H = do
   let accounts = DA.address <$> allAccounts
   balance <- mapM (\x -> obtainSample conn ("account", x, now)) accounts
   accruedRewards <- mapM (\x -> obtainSampleF conn ("rewards", x, now)) accounts
-  let totalBalance = toHtml $ undConvert $ sum balance
-  let totalRewards = toHtml $ undConvertF $ sum accruedRewards
-  let tableHead =
-        thead
-          (th "Account Number" >> th "Balance change" >> th "Accrued rewards")
-  let xns =
-        Prelude.zip3
+  let totalRewards = Renderer.undConvertF $ sum accruedRewards
+  let headers = ["Account Number", "Balance change", "Accrued rewards"]
+  let xns' =
+        zip3
           (makeURL <$> accounts)
-          (toHtml . undConvert <$> balance)
-          ((\x -> toHtml (undConvertF x)) <$> accruedRewards)
-  let rows = mapM_ (\(a, b, c) -> tr (td a >> td b >> td c)) xns
-  let totals = tr (td "Total" >> td totalBalance >> td totalRewards)
-  return $
-    renderHtml (table ! class_ "statstable" $ (tableHead >> rows >> totals))
+          (Renderer.undConvertZ <$> balance)
+          (Renderer.undConvertF <$> accruedRewards)
+  let xns'' =
+        xns' ++
+        [ ( toHtml ("Total" :: String)
+          , Renderer.undConvertZ $ sum balance
+          , Renderer.undConvertF $ sum accruedRewards)
+        ]
+  let xns = (\(a, b, c) -> [a, b, c]) <$> xns''
+  return $ Renderer.renderTable headers xns
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
   supplyLockedChange <- metricDX "supply" "locked"
   supplyTotalChange <- metricDX "supply" "total"
-  let tableHead = thead (th "Total" >> th "Amount in FUND")
-  let lns =
-        [ ("Supply Amount Change", (toHtml . undConvert) supplyAmountChange)
-        , ("Supply Locked Change", (toHtml . undConvert) supplyLockedChange)
-        , ("Supply Total Change", (toHtml . undConvert) supplyTotalChange)
+  let headers = ["Total", "Amount in FUND"]
+  let xns =
+        [ ["Supply Amount Change", Renderer.undConvertZ supplyAmountChange]
+        , ["Supply Locked Change", Renderer.undConvertZ supplyLockedChange]
+        , ["Supply Total Change", Renderer.undConvertZ supplyTotalChange]
         ]
-  return $
-    renderHtml (table ! class_ "statstable" $ (tableHead >> (mapM_ c lns)))
-  where
-    c ln = tr (td (fst ln) >> td (snd ln))
+  return $ Renderer.renderTable headers xns
 
 tableValidators24H = do
   now <- window 1
@@ -133,37 +134,33 @@ tableValidators24H = do
       (\x -> obtainSampleF conn ("rewards_outstanding_validator", x, now))
       (V.address <$> vxs)
   let sharesTotal = sum (shares <$> vxs)
-  let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
-  let tableHead =
-        thead
-          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Rewards" >>
-           th "Outstanding" >>
-           th "Commission %")
-  let totals =
-        tr
-          (td "Total" >> td sharesTotalStr >> td "100.00" >> td "N/A" >>
-           td "N/A" >>
-           td "N/A")
-  let xns =
+  let headers =
+        [ "EV"
+        , "Delegator Shares"
+        , "Power %"
+        , "Rewards"
+        , "Outstanding"
+        , "Commission %"
+        ]
+  let xns' =
         zip6
-          (map (\v -> makeValidatorURL (V.address v) (moniker v)) vxs)
-          (map
-             (\v -> toHtml $ showFFloat (Just 2) (shares v / 1000000000) "")
-             vxs)
-          (map
-             (\v ->
-                toHtml $ showFFloat (Just 2) (shares v / sharesTotal * 100) "")
-             vxs)
-          (toHtml . undConvertF <$> validatorRewards)
-          (toHtml . undConvertF <$> validatorRewardsOutstanding)
-          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
-  let rows =
-        mapM_
-          (\(a, b, c, d, e, f) ->
-             tr (td a >> td b >> td c >> td d >> td e >> td f))
-          xns
-  return $
-    renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
+          ((\v -> makeValidatorURL (V.address v) (moniker v)) <$> vxs)
+          ((\v -> undCommaSeperate $ shares v) <$> vxs)
+          ((\v -> percentage (shares v / sharesTotal * 100)) <$> vxs)
+          (Renderer.undConvertF <$> validatorRewards)
+          (Renderer.undConvertF <$> validatorRewardsOutstanding)
+          ((\v -> percentage (commission v * 100)) <$> vxs)
+  let xns'' =
+        xns' ++
+        [ ( toHtml ("Total" :: String)
+          , undCommaSeperate sharesTotal
+          , toHtml ("100.00" :: String)
+          , toHtml ("N/A" :: String)
+          , toHtml ("N/A" :: String)
+          , toHtml ("N/A" :: String))
+        ]
+  let xns = (\(a, b, c, d, e, f) -> [a, b, c, d, e, f]) <$> xns''
+  return $ Renderer.renderTable headers xns
 
 tableValidators24HLite = do
   now <- window 1
@@ -172,25 +169,22 @@ tableValidators24HLite = do
   vxsRaw <- mapM (\x -> V.readValidator conn x) vs
   let vxs = sortBy (flip (compare `on` shares)) vxsRaw
   let sharesTotal = sum (shares <$> vxs)
-  let sharesTotalStr = toHtml $ undConvertF $ sharesTotal
-  let tableHead =
-        thead
-          (th "EV" >> th "Delegator Shares" >> th "Power %" >> th "Commission %")
-  let totals = tr (td "Total" >> td sharesTotalStr >> td "100.00" >> td "N/A")
-  let xns =
+  let headers = ["EV", "Delegator Shares", "Power %", "Commission %"]
+  let xns' =
         zip4
-          (map (\v -> makeValidatorURL (V.address v) (moniker v)) vxs)
-          (map
-             (\v -> toHtml $ showFFloat (Just 2) (shares v / 1000000000) "")
-             vxs)
-          (map
-             (\v ->
-                toHtml $ showFFloat (Just 2) (shares v / sharesTotal * 100) "")
-             vxs)
-          (map (\v -> toHtml $ showFFloat (Just 2) (commission v * 100) "") vxs)
-  let rows = mapM_ (\(a, b, c, d) -> tr (td a >> td b >> td c >> td d)) xns
-  return $
-    renderHtml (table ! class_ "statstable" $ tableHead >> rows >> totals)
+          ((\v -> makeValidatorURL (V.address v) (moniker v)) <$> vxs)
+          ((\v -> undCommaSeperate $ shares v) <$> vxs)
+          ((\v -> percentage (shares v / sharesTotal * 100)) <$> vxs)
+          ((\v -> percentage (commission v * 100)) <$> vxs)
+  let xns'' =
+        xns' ++
+        [ ( toHtml ("Total" :: String)
+          , undCommaSeperate sharesTotal
+          , toHtml ("100.00" :: String)
+          , toHtml ("N/A" :: String))
+        ]
+  let xns = (\(a, b, c, d) -> [a, b, c, d]) <$> xns''
+  return $ Renderer.renderTable headers xns
 
 zipMap :: Map String Int -> Map String Int -> Map String (Maybe Int, Maybe Int)
 zipMap m1 m2 =
@@ -214,10 +208,11 @@ tableDiskUsage = do
   l1 <- latestZQuery conn ("DiskUsage", "Used", now)
   l2 <- latestZQuery conn ("DiskUsage", "1KBlocks", now)
   let m3 = zipMap (fromList l1) (fromList l2)
-  let xns = (\(a, b) -> [a, repr . fst $ b, repr . snd $ b]) <$> (M.toList m3)
+  let xns =
+        (\(a, b) -> [toHtml a, toHtml $ repr . fst $ b, toHtml $ repr . snd $ b]) <$>
+        (M.toList m3)
   let headers = ["Machine", "Used (GB)", "Total (GB)"]
-  t <- Report.renderTable headers xns
-  return $ t
+  return $ Renderer.renderTable headers xns
 
 writeMetric target value = do
   basePath <- coreMetricsPath
@@ -284,13 +279,10 @@ tableRewards = do
   now <- window 7
   conn <- connectionString >>= connectPostgreSQL
   x <- obtainSample conn ("supply", "amount", now)
-  let daily = fromIntegral x / nund
-  let annual = daily * 365
+  let annual = x * 365
   let headers = ["Period", "FUND Reward"]
-  let xns = [["Daily", show daily], ["Annual Projection", show annual]]
-  t <- Report.renderTable headers xns
-  return $ t
-  where
-    nund = 1000000000
-
-test = tableRewards
+  let xns =
+        [ ["Daily", undCommaSeperateZ x]
+        , ["Annual Projection", undCommaSeperateZ annual]
+        ]
+  return $ Renderer.renderTable headers xns

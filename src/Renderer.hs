@@ -5,6 +5,8 @@ module Renderer
   , makeURL
   , percentage
   , undConvertD
+  , undConvertF
+  , undConvertZ
   , undCommaSeperate
   , undCommaSeperateZ
   ) where
@@ -34,11 +36,11 @@ undConvertD n = toHtml $ showFFloat (Just 2) (n / 1000000000) ""
 percentage :: RealFloat a => a -> Html
 percentage n = toHtml $ showFFloat (Just 2) n ""
 
-undConvert :: Integral a => a -> String
-undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
+undConvertZ :: Integral a => a -> Html
+undConvertZ n = toHtml $ showFFloat (Just 2) (fromIntegral n / 1000000000) ""
 
-undConvertF :: RealFloat a => a -> String
-undConvertF n = showFFloat (Just 2) (n / 1000000000) ""
+undConvertF :: RealFloat a => a -> Html
+undConvertF n = toHtml $ showFFloat (Just 2) (n / 1000000000) ""
 
 makeURL :: String -> Html
 makeURL acc = a ! href (stringValue x) $ (toHtml acc)
