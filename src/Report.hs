@@ -59,12 +59,6 @@ window days = do
   let seconds = realToFrac (-3600 * 24 * days)
   return $ (addUTCTime (-3600 * 24) now, now)
 
-undConvert :: Integral a => a -> String
-undConvert n = showFFloat (Just 2) (fromIntegral n / 1000000000) ""
-
-undConvertF :: RealFloat a => a -> String
-undConvertF n = showFFloat (Just 2) (n / 1000000000) ""
-
 gbConvert :: Int -> String
 gbConvert n = showFFloat (Just 2) (fromIntegral n / 1000000) ""
 
@@ -195,12 +189,6 @@ zipMap m1 m2 =
 repr :: Maybe Int -> String
 repr Nothing  = "N/A"
 repr (Just x) = gbConvert x
-
-renderTable :: [String] -> [[String]] -> IO String
-renderTable headers ds = do
-  let tableHead = thead (mapM_ (th . toHtml) headers)
-  let rows = mapM_ (\xs -> tr (mapM_ (td . toHtml) xs)) ds
-  return $ renderHtml (table ! class_ "statstable" $ tableHead >> rows)
 
 tableDiskUsage = do
   now <- window 1
