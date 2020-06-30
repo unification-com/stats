@@ -117,8 +117,8 @@ tableValidators24H = do
   now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxsRaw <- mapM (\x -> V.readValidator conn x) vs
-  let vxs = sortBy (flip (compare `on` shares)) vxsRaw
+  vxsRaw <- mapM (V.readValidator conn) vs
+  let vxs = sortBy (flip compare `on` shares) vxsRaw
   validatorRewards <-
     mapM
       (\x -> obtainSampleF conn ("rewards_validator", x, now))
@@ -160,14 +160,14 @@ tableValidators24HLite = do
   now <- window 1
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
-  vxsRaw <- mapM (\x -> V.readValidator conn x) vs
-  let vxs = sortBy (flip (compare `on` shares)) vxsRaw
+  vxsRaw <- mapM (V.readValidator conn) vs
+  let vxs = sortBy (flip compare `on` shares) vxsRaw
   let sharesTotal = sum (shares <$> vxs)
   let headers = ["EV", "Delegator Shares", "Power %", "Commission %"]
   let xns' =
         zip4
           ((\v -> makeValidatorURL (V.address v) (moniker v)) <$> vxs)
-          ((\v -> undCommaSeperate $ shares v) <$> vxs)
+          (undCommaSeperate . shares <$> vxs)
           ((\v -> percentage (shares v / sharesTotal * 100)) <$> vxs)
           ((\v -> percentage (commission v * 100)) <$> vxs)
   let xns'' =
