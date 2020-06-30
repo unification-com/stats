@@ -85,21 +85,21 @@ tableAccounts24H = do
   let accounts = DA.address <$> allAccounts
   balance <- mapM (\x -> obtainSample conn ("account", x, now)) accounts
   accruedRewards <- mapM (\x -> obtainSampleF conn ("rewards", x, now)) accounts
-  let totalRewards = Renderer.undConvertF $ sum accruedRewards
+  let totalRewards = undConvertF $ sum accruedRewards
   let headers = ["Account Number", "Balance change", "Accrued rewards"]
   let xns' =
         zip3
           (makeURL <$> accounts)
-          (Renderer.undConvertZ <$> balance)
-          (Renderer.undConvertF <$> accruedRewards)
+          (undConvertZ <$> balance)
+          (undConvertF <$> accruedRewards)
   let xns'' =
         xns' ++
         [ ( toHtml ("Total" :: String)
-          , Renderer.undConvertZ $ sum balance
-          , Renderer.undConvertF $ sum accruedRewards)
+          , undConvertZ $ sum balance
+          , undConvertF $ sum accruedRewards)
         ]
   let xns = (\(a, b, c) -> [a, b, c]) <$> xns''
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
 
 tableTotalSupply24H = do
   supplyAmountChange <- metricDX "supply" "amount"
@@ -107,11 +107,11 @@ tableTotalSupply24H = do
   supplyTotalChange <- metricDX "supply" "total"
   let headers = ["Total", "Amount in FUND"]
   let xns =
-        [ ["Supply Amount Change", Renderer.undConvertZ supplyAmountChange]
-        , ["Supply Locked Change", Renderer.undConvertZ supplyLockedChange]
-        , ["Supply Total Change", Renderer.undConvertZ supplyTotalChange]
+        [ ["Supply Amount Change", undConvertZ supplyAmountChange]
+        , ["Supply Locked Change", undConvertZ supplyLockedChange]
+        , ["Supply Total Change", undConvertZ supplyTotalChange]
         ]
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
 
 tableValidators24H = do
   now <- window 1
@@ -139,10 +139,10 @@ tableValidators24H = do
   let xns' =
         zip6
           ((\v -> makeValidatorURL (V.address v) (moniker v)) <$> vxs)
-          ((\v -> undCommaSeperate $ shares v) <$> vxs)
+          (undCommaSeperate . shares <$> vxs)
           ((\v -> percentage (shares v / sharesTotal * 100)) <$> vxs)
-          (Renderer.undConvertF <$> validatorRewards)
-          (Renderer.undConvertF <$> validatorRewardsOutstanding)
+          (undConvertF <$> validatorRewards)
+          (undConvertF <$> validatorRewardsOutstanding)
           ((\v -> percentage (commission v * 100)) <$> vxs)
   let xns'' =
         xns' ++
@@ -154,7 +154,7 @@ tableValidators24H = do
           , toHtml ("N/A" :: String))
         ]
   let xns = (\(a, b, c, d, e, f) -> [a, b, c, d, e, f]) <$> xns''
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
 
 tableValidators24HLite = do
   now <- window 1
@@ -178,11 +178,11 @@ tableValidators24HLite = do
           , toHtml ("N/A" :: String))
         ]
   let xns = (\(a, b, c, d) -> [a, b, c, d]) <$> xns''
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
 
 zipMap :: Map String Int -> Map String Int -> Map String (Maybe Int, Maybe Int)
 zipMap m1 m2 =
-  let allKeys = keys (union m1 m2)
+  let allKeys = keys (m1 `union` m2)
       f' k = (k, (M.lookup k m1, M.lookup k m2))
    in fromList $ map f' allKeys
 
@@ -200,7 +200,7 @@ tableDiskUsage = do
         (\(a, b) -> [toHtml a, toHtml $ repr . fst $ b, toHtml $ repr . snd $ b]) <$>
         (M.toList m3)
   let headers = ["Machine", "Used (GB)", "Total (GB)"]
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
 
 writeMetric target value = do
   basePath <- coreMetricsPath
@@ -258,7 +258,7 @@ coreTable = do
         , ["Staked FUND", undCommaSeperateZ sharesTotalRounded]
         , ["Liquid Supply", undCommaSeperateZ liquid]
         ]
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
 
@@ -272,4 +272,4 @@ tableRewards = do
         [ ["Daily", undCommaSeperateZ x]
         , ["Annual Projection", undCommaSeperateZ annual]
         ]
-  return $ Renderer.renderTable headers xns
+  return $ renderTable headers xns
