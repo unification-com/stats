@@ -33,7 +33,7 @@ import           Config                          (connectionString,
                                                   coreMetricsPath)
 import           Database.Accounts               as DA (Account (..),
                                                         allAccounts)
-import           Parsers.Account                 (queryMainchainAccount)
+import           Parsers.Account                 (queryMainchainAccount, supply)
 import           Parsers.Validator               as V (Validator (..),
                                                        readValidator)
 import           Queries                         (FeatureQuery, Window,
@@ -219,6 +219,8 @@ writeCoreMetrics = do
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> V.readValidator conn x) vs
+  (amount, _, _) <- supply
+  let totalSupply = read amount :: Int
   let sharesTotal = sum (shares <$> vxs)
   let circulating = totalSupply - locked
   let liquid = circulating - (round sharesTotal :: Int)
@@ -234,8 +236,6 @@ writeCoreMetrics = do
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
-    -- TODO: Get this dynamically
-    totalSupply = 120799977 * nund
     render x = show (x `Prelude.div` nund)
 
 coreTable = do
@@ -244,6 +244,8 @@ coreTable = do
   conn <- connectionString >>= connectPostgreSQL
   vs <- validators conn now
   vxs <- mapM (\x -> V.readValidator conn x) vs
+  (amount, _, _) <- supply
+  let totalSupply = read amount :: Int
   let sharesTotal = sum (shares <$> vxs)
   let circulating = totalSupply - locked
   let sharesTotalRounded = round sharesTotal :: Int
@@ -259,9 +261,6 @@ coreTable = do
   return $ Renderer.renderTable headers xns
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
-    nund = 1000000000
-    -- TODO: Get this dynamically
-    totalSupply = 120799977 * nund
 
 tableRewards = do
   now <- window 7

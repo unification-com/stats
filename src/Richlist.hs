@@ -4,7 +4,6 @@
 module Richlist
   ( tableRichlist
   , snapshotTime
-  , totalSupply
   ) where
 
 import           Data.Aeson
@@ -16,7 +15,8 @@ import           Data.Map              (Map, empty, findWithDefault, insertWith,
 import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import           GHC.Generics          (Generic)
 import           Numeric               (showFFloat)
-import           Renderer              (makeURL, percentage, renderTable, undCommaSeperate)
+import           Renderer              (makeURL, percentage, renderTable,
+                                        undCommaSeperate)
 import           System.IO             (readFile)
 
 source = "/home/deploy/extract/genesis.json"
@@ -133,15 +133,6 @@ snapshotTime = do
   x <- readFile timestamp
   let xInt = read x :: Int
   return $ show (posixSecondsToUTCTime (fromIntegral xInt))
-
-totalSupply :: IO Int
-totalSupply = do
-  p <- parse
-  case p of
-    Nothing -> return defaultSupply
-    Just (c) -> return (amount $ Prelude.head $ supply' $ supply $ app_state c)
-  where
-    defaultSupply = 120799977119380000
 
 userAccounts :: Config -> [(String, Int)]
 userAccounts c = zip addxs coinxs
