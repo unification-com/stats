@@ -7,6 +7,7 @@ module Report
   , tableValidators24HLite
   , tableDiskUsage
   , tableRewards
+  , tableSimpleRewards
   , writeCoreMetrics
   , coreTable
   ) where
@@ -18,7 +19,8 @@ import           Data.Map.Strict                 as M (Map, fromList, keys,
                                                        lookup, toList, union)
 import           Data.Text                       as T hiding (map)
 import           Data.Time.Clock                 (NominalDiffTime, UTCTime,
-                                                  addUTCTime, getCurrentTime)
+                                                  addUTCTime, diffUTCTime,
+                                                  getCurrentTime, nominalDay)
 import           Database.PostgreSQL.Simple
 import           Numeric                         (showFFloat)
 
@@ -232,7 +234,7 @@ writeCoreMetrics = do
   writeMetric "total-supply/index.html" $ render totalSupply
   writeMetric "circulating-supply/index.html" $ render circulating
   writeMetric "liquid-supply/index.html" $ render liquid
-  writeMetric "landing/index.html" $ (j)
+  writeMetric "landing/index.html" $ j
   where
     leftOversAccount = "und1fxnqz9evaug5m4xuh68s62qg9f5xe2vzsj44l8"
     nund = 1000000000
@@ -272,4 +274,24 @@ tableRewards = do
         [ ["Daily", undCommaSeperateZ x]
         , ["Annual Projection", undCommaSeperateZ annual]
         ]
+  return $ Renderer.renderTable headers xns
+
+tableSimpleRewards = do
+  let genesis = (read "2020-05-14 09:33:07 UTC") :: UTCTime
+  now <- getCurrentTime :: IO UTCTime
+  let sub = now `diffUTCTime` genesis
+  let days = sub / nominalDay
+  (amount, _, _) <- supply
+  let totalSupply = read amount :: Double
+  let initialSupply = read "120000000000000000" :: Double
+  let supplyChange = totalSupply - initialSupply
+  -- TODO: Why is this computationally expensive?
+  let x = supplyChange / (realToFrac days)
+  let annual = x * 365
+  let headers = ["Period", "FUND Reward"]
+  let xns =
+        [ ["Daily", undCommaSeperate x]
+        , ["Annual Projection", undCommaSeperate annual]
+        ]
   return $ renderTable headers xns
+
