@@ -70,7 +70,7 @@ check url component = do
 netcat :: String -> Int -> IO Bool
 netcat ipAddress port = do
   (_, Just hOut, _, hProc) <-
-    createProcess ((shell (shell_cmd)) {std_out = CreatePipe})
+    createProcess ((shell shell_cmd) {std_out = CreatePipe})
   exitCode <- waitForProcess hProc
   case exitCode of
     ExitSuccess -> return True
