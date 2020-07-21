@@ -6,8 +6,9 @@ import           Data.Monoid (mappend)
 import           Hakyll
 
 import           Report      (coreTable, tableAccounts24H, tableDiskUsage,
+                              tableRewards, tableSimpleRewards,
                               tableTotalSupply24H, tableValidators24H,
-                              tableValidators24HLite, tableRewards, writeCoreMetrics)
+                              tableValidators24HLite, writeCoreMetrics)
 import           Richlist    (snapshotTime, tableRichlist)
 
 main :: IO ()
@@ -16,7 +17,7 @@ main = do
   dataRichlist <- tableRichlist
   dataSnapshotTime <- snapshotTime
   dataCoreTable <- coreTable
-  dataRewards <- tableRewards
+  dataRewards <- tableSimpleRewards
   dataAccounts24H <- tableAccounts24H
   dataValidators24H <- tableValidators24H
   dataValidators24H <- tableValidators24HLite

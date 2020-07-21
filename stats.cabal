@@ -30,6 +30,7 @@ library
     , Parsers.Common
     , Parsers.Validator
     , Queries
+    , Renderer
   build-depends:       
       base
     , blaze-html
@@ -48,6 +49,7 @@ library
     , process
     , text
     , time
+    , split
     , SVGFonts
     -- Radar requirements
     , aeson

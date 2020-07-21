@@ -10,7 +10,7 @@ import           System.IO      (hGetContents)
 import           System.Process
 
 restEndpoint :: String -> String
-restEndpoint segment = "https://rest2.unification.io/" ++ segment
+restEndpoint segment = "https://rest.unification.io/" ++ segment
 
 curljq :: String -> String -> IO [String]
 curljq url query = do

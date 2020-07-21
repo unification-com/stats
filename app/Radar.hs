@@ -7,6 +7,8 @@ import           Radar.Scan         (scan, scanMetrics, scanPorts)
 import           Radar.Slack        (postToSlack)
 import           Secrets            (getSecret)
 
+version = "1.01"
+
 evaluate scanner = do
   slackChannel <- getSecret "TestAPI"
   case slackChannel of
@@ -21,15 +23,18 @@ evaluate scanner = do
 
 fn :: [Char] -> [String] -> IO ()
 fn "all" args = do
+  print $ show version
   evaluate scan
   evaluate scanMetrics
   evaluate scanPorts
-fn "metrics" args = do
-  evaluate scanMetrics
+fn "metrics" args = evaluate scanMetrics
+fn "version" args = do
+  print $ show version
+  return ()
 fn _ _ = do
   print "all - HTTP, core metric and port scans"
   print "metrics - only scan core metrirs"
-  return $ ()
+  return ()
 
 main = do
   args <- getArgs
