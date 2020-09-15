@@ -7,7 +7,7 @@ import           Radar.Scan         (scan, scanMetrics, scanPorts)
 import           Radar.Slack        (postToSlack)
 import           Secrets            (getSecret)
 
-version = "1.02"
+version = "1.03"
 
 evaluate scanner = do
   slackChannel <- getSecret "TestAPI"

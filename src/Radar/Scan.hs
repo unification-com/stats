@@ -24,7 +24,6 @@ pairs =
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
-  , ("https://docs.unification.io", "Unification Mainchain Documentation")
   ]
 
 ports =
