@@ -4,20 +4,30 @@
 module Richlist
   ( tableRichlist
   , snapshotTime
-  ) where
+  )
+where
 
 import           Data.Aeson
-import qualified Data.ByteString.Lazy  as B
-import           Data.Function         (on)
-import           Data.List             (sortBy)
-import           Data.Map              (Map, empty, findWithDefault, insertWith,
-                                        lookup, toList)
-import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
-import           GHC.Generics          (Generic)
-import           Numeric               (showFFloat)
-import           Renderer              (makeURL, percentage, renderTable,
-                                        undCommaSeperate)
-import           System.IO             (readFile)
+import qualified Data.ByteString.Lazy          as B
+import           Data.Function                  ( on )
+import           Data.List                      ( sortBy )
+import           Data.Map                       ( Map
+                                                , empty
+                                                , findWithDefault
+                                                , insertWith
+                                                , lookup
+                                                , toList
+                                                , unionWith
+                                                )
+import           Data.Time.Clock.POSIX          ( posixSecondsToUTCTime )
+import           GHC.Generics                   ( Generic )
+import           Numeric                        ( showFFloat )
+import           Renderer                       ( makeURL
+                                                , percentage
+                                                , renderTable
+                                                , undCommaSeperate
+                                                )
+import           System.IO                      ( readFile )
 
 source = "/home/deploy/extract/genesis.json"
 
@@ -32,6 +42,7 @@ data Config =
 data AppState =
   AppState
     { auth    :: Auth
+    , distribution :: Distribution
     , supply  :: Supply
     , staking :: Staking
     }
@@ -50,6 +61,26 @@ data Account =
     }
   deriving (Show, Generic)
 
+data Distribution =
+  Distribution
+    { delegator_starting_infos :: [DelegationStartingInfo]
+    }
+  deriving (Show, Generic)
+
+data DelegationStartingInfo =
+  DelegationStartingInfo
+    { delegator_address_starting :: String
+    , starting_info :: StartingInfo
+    }
+  deriving (Show, Generic)
+
+data StartingInfo =
+  StartingInfo
+    { stake :: Double
+    }
+  deriving (Show, Generic)
+
+
 data Value =
   Value
     { address :: String
@@ -65,7 +96,9 @@ data Supply =
 
 data Staking =
   Staking
-    { delegations :: [Delegation]
+    { delegations   :: [Delegation]
+    , redelegations :: [Redelegation]
+    , unbonding_delegations :: [UnbondingDelegation]
     }
   deriving (Show, Generic)
 
@@ -83,9 +116,43 @@ data Delegation =
     }
   deriving (Show, Generic)
 
-instance FromJSON Config
+data Redelegation =
+  Redelegation
+    { redelegator_address :: String
+    , entries           :: [RedelegationEntry]
+    }
+  deriving (Show, Generic)
+
+data UnbondingDelegation =
+  UnbondingDelegation
+    { undelegator_address :: String
+    , unentries           :: [UnbondingDelegationEntry]
+    }
+  deriving (Show, Generic)
+
+data RedelegationEntry =
+  RedelegationEntry
+    { shares_dst        :: Double
+    }
+  deriving (Show, Generic)
+
+data UnbondingDelegationEntry =
+  UnbondingDelegationEntry
+    { balance        :: Double
+    }
+  deriving (Show, Generic)
 
 instance FromJSON AppState
+
+instance FromJSON Config
+
+instance FromJSON DelegationStartingInfo where
+  parseJSON (Object v) = DelegationStartingInfo <$> v .: "delegator_address" <*> v .: "starting_info"
+
+instance FromJSON Distribution
+
+instance FromJSON StartingInfo where
+  parseJSON (Object v) = StartingInfo <$> (readDouble <$> v .: "stake")
 
 instance FromJSON Staking
 
@@ -98,6 +165,18 @@ instance FromJSON Delegation where
   parseJSON (Object v) =
     Delegation <$> v .: "delegator_address" <*> (readDouble <$> v .: "shares") <*>
     v .: "validator_address"
+
+instance FromJSON Redelegation where
+  parseJSON (Object v) = Redelegation <$> v .: "delegator_address" <*> v .: "entries"
+
+instance FromJSON RedelegationEntry where
+  parseJSON (Object v) = RedelegationEntry <$> (readDouble <$> v .: "shares_dst")
+
+instance FromJSON UnbondingDelegation where
+  parseJSON (Object v) = UnbondingDelegation <$> v .: "delegator_address" <*> v .: "entries"
+
+instance FromJSON UnbondingDelegationEntry where
+  parseJSON (Object v) = UnbondingDelegationEntry <$> (readDouble <$> v .: "balance")
 
 instance FromJSON Richlist.Value
 
@@ -136,43 +215,64 @@ snapshotTime = do
 
 userAccounts :: Config -> [(String, Int)]
 userAccounts c = zip addxs coinxs
-  where
-    accxs = accounts . auth . app_state $ c
-    standardAccounts =
-      filter (\x -> accountType x == "cosmos-sdk/Account") accxs
-    nonEmptyAccounts =
-      filter (\x -> length (coins (Richlist.value x)) > 0) standardAccounts
-    addxs = Richlist.address <$> (Richlist.value <$> nonEmptyAccounts)
-    mapper [] = 0
-    mapper xs = amount $ Prelude.head xs
-    coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
+ where
+  accxs            = accounts . auth . app_state $ c
+  standardAccounts = filter (\x -> accountType x == "cosmos-sdk/Account") accxs
+  nonEmptyAccounts =
+    filter (\x -> length (coins (Richlist.value x)) > 0) standardAccounts
+  addxs = Richlist.address <$> (Richlist.value <$> nonEmptyAccounts)
+  mapper [] = 0
+  mapper xs = amount $ Prelude.head xs
+  coinxs = map mapper (coins <$> (Richlist.value <$> nonEmptyAccounts))
 
 topFUNDHolders :: IO [(String, Double, Double)]
 topFUNDHolders = do
   parsed <- parse
   case parsed of
     Nothing -> return []
-    Just p -> do
+    Just p  -> do
       let liquidlist = (\(a, b) -> (a, fromIntegral b)) <$> (userAccounts p)
+      let startingMap = foldr
+            insertDSI
+            empty
+            (delegator_starting_infos . distribution . app_state $ p)
+      let redelegs = redelegations . staking . app_state $ p
+      let redelegationMap =
+            foldr insertTupleFn empty (map redelegationCollapser redelegs)
+      let unbonds = unbonding_delegations . staking . app_state $ p
+      let unbondingMap =
+            foldr insertTupleFn empty (map unbondingCollapser unbonds)
       let stakeMap =
             foldr insertFn empty (delegations . staking . app_state $ p)
-      let accountMap = foldr anotherFn stakeMap liquidlist
+      let united     = unionWith (+) startingMap unbondingMap
+      let accountMap = foldr anotherFn united liquidlist
       let richlist =
             take 100 (reverse (sortBy (compare `on` snd) (toList accountMap)))
-      let stakelist = map (\(acc, _) -> findWithDefault 0 acc stakeMap) richlist
+      let stakelist =
+            map (\(acc, _) -> findWithDefault 0 acc startingMap) richlist
       let zipped = map stakePercent (zip richlist stakelist)
       return $ zipped
-  where
-    insertFn :: Delegation -> Map String Double -> Map String Double
-    insertFn (Delegation a s _) mk = insertWith (+) a s mk
-    anotherFn :: (String, Double) -> Map String Double -> Map String Double
-    anotherFn (a, s) mk = insertWith (+) a s mk
-    stakePercent ((a, b), c) = (a, b, c / b * 100)
+ where
+  insertFn :: Delegation -> Map String Double -> Map String Double
+  insertFn (Delegation a s _) mk = insertWith (+) a s mk
+  insertDSI :: DelegationStartingInfo -> Map String Double -> Map String Double
+  insertDSI (DelegationStartingInfo a (StartingInfo s)) mk =
+    insertWith (+) a s mk
+  insertTupleFn :: (String, Double) -> Map String Double -> Map String Double
+  insertTupleFn (a, v) mk = insertWith (+) a v mk
+  anotherFn :: (String, Double) -> Map String Double -> Map String Double
+  anotherFn (a, s) mk = insertWith (+) a s mk
+  stakePercent ((a, b), c) = (a, b, c / b * 100)
+  redelegationCollapser :: Redelegation -> (String, Double)
+  redelegationCollapser (Redelegation a e) =
+    (a, foldr (\x b -> shares_dst x + b) 0 e)
+  unbondingCollapser :: UnbondingDelegation -> (String, Double)
+  unbondingCollapser (UnbondingDelegation a e) =
+    (a, foldr (\x b -> balance x + b) 0 e)
 
 tableRichlist :: IO String
 tableRichlist = do
   xns <- topFUNDHolders
   let headers = ["Account", "Amount in FUND", "Staked %"]
   return $ renderTable headers (map mapper xns)
-  where
-    mapper (a, b, c) = [makeURL a, undCommaSeperate b, percentage c]
+  where mapper (a, b, c) = [makeURL a, undCommaSeperate b, percentage c]

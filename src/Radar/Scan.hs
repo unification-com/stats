@@ -17,17 +17,19 @@ type URL = String
 pairs =
   [ ("https://explorer.unification.io", "Unification Mainchain Explorer")
   , ("https://rest.unification.io/staking/validators", "operator_address")
-  , ("https://rpc1.unification.io:26657/status", "rpcrest-1")
+  , ("https://rest2.unification.io/staking/validators", "operator_address")
+  , ("https://rpc1.unification.io/status", "rpcrest")
+  , ("https://rpc2.unification.io/status", "rpcrest")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "bnb1hgk73jsfcg9achdmdrtn3h4pprjemfdhpdh3pn")
   , ( "https://api-tokenswap.unification.io/pingtokenswap"
     , "0x82FA9fbca5d6e31fC8531D3A8cF684552288d66F")
-  , ("https://docs.unification.io", "Unification Mainchain Documentation")
   ]
 
 ports =
   [ ("18.222.228.70", 26656)
-  , ("18.188.19.204", 26656)
+  -- Genesis export happens on Sentinel 2
+  -- , ("18.188.19.204", 26656)
   , ("18.216.27.230", 26656)
   , ("18.218.202.104", 26656)
   , ("18.191.81.153", 26656)
