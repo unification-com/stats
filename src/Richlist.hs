@@ -42,6 +42,7 @@ data Config =
 data AppState =
   AppState
     { auth    :: Auth
+    , distribution :: Distribution
     , supply  :: Supply
     , staking :: Staking
     }
@@ -59,6 +60,26 @@ data Account =
     , value       :: Richlist.Value
     }
   deriving (Show, Generic)
+
+data Distribution =
+  Distribution
+    { delegator_starting_infos :: [DelegationStartingInfo]
+    }
+  deriving (Show, Generic)
+
+data DelegationStartingInfo =
+  DelegationStartingInfo
+    { delegator_address_starting :: String
+    , starting_info :: StartingInfo
+    }
+  deriving (Show, Generic)
+
+data StartingInfo =
+  StartingInfo
+    { stake :: Double
+    }
+  deriving (Show, Generic)
+
 
 data Value =
   Value
@@ -121,9 +142,17 @@ data UnbondingDelegationEntry =
     }
   deriving (Show, Generic)
 
+instance FromJSON AppState
+
 instance FromJSON Config
 
-instance FromJSON AppState
+instance FromJSON DelegationStartingInfo where
+  parseJSON (Object v) = DelegationStartingInfo <$> v .: "delegator_address" <*> v .: "starting_info"
+
+instance FromJSON Distribution
+
+instance FromJSON StartingInfo where
+  parseJSON (Object v) = StartingInfo <$> (readDouble <$> v .: "stake")
 
 instance FromJSON Staking
 
@@ -140,11 +169,11 @@ instance FromJSON Delegation where
 instance FromJSON Redelegation where
   parseJSON (Object v) = Redelegation <$> v .: "delegator_address" <*> v .: "entries"
 
-instance FromJSON UnbondingDelegation where
-  parseJSON (Object v) = UnbondingDelegation <$> v .: "delegator_address" <*> v .: "entries"
-
 instance FromJSON RedelegationEntry where
   parseJSON (Object v) = RedelegationEntry <$> (readDouble <$> v .: "shares_dst")
+
+instance FromJSON UnbondingDelegation where
+  parseJSON (Object v) = UnbondingDelegation <$> v .: "delegator_address" <*> v .: "entries"
 
 instance FromJSON UnbondingDelegationEntry where
   parseJSON (Object v) = UnbondingDelegationEntry <$> (readDouble <$> v .: "balance")
@@ -203,7 +232,11 @@ topFUNDHolders = do
     Nothing -> return []
     Just p  -> do
       let liquidlist = (\(a, b) -> (a, fromIntegral b)) <$> (userAccounts p)
-      let redelegs   = redelegations . staking . app_state $ p
+      let startingMap = foldr
+            insertDSI
+            empty
+            (delegator_starting_infos . distribution . app_state $ p)
+      let redelegs = redelegations . staking . app_state $ p
       let redelegationMap =
             foldr insertTupleFn empty (map redelegationCollapser redelegs)
       let unbonds = unbonding_delegations . staking . app_state $ p
@@ -211,8 +244,7 @@ topFUNDHolders = do
             foldr insertTupleFn empty (map unbondingCollapser unbonds)
       let stakeMap =
             foldr insertFn empty (delegations . staking . app_state $ p)
-      let united =
-            unionWith (+) stakeMap (unionWith (+) redelegationMap unbondingMap)
+      let united     = unionWith (+) startingMap unbondingMap
       let accountMap = foldr anotherFn united liquidlist
       let richlist =
             take 100 (reverse (sortBy (compare `on` snd) (toList accountMap)))
@@ -223,6 +255,9 @@ topFUNDHolders = do
  where
   insertFn :: Delegation -> Map String Double -> Map String Double
   insertFn (Delegation a s _) mk = insertWith (+) a s mk
+  insertDSI :: DelegationStartingInfo -> Map String Double -> Map String Double
+  insertDSI (DelegationStartingInfo a (StartingInfo s)) mk =
+    insertWith (+) a s mk
   insertTupleFn :: (String, Double) -> Map String Double -> Map String Double
   insertTupleFn (a, v) mk = insertWith (+) a v mk
   anotherFn :: (String, Double) -> Map String Double -> Map String Double
@@ -241,4 +276,3 @@ tableRichlist = do
   let headers = ["Account", "Amount in FUND", "Staked %"]
   return $ renderTable headers (map mapper xns)
   where mapper (a, b, c) = [makeURL a, undCommaSeperate b, percentage c]
-
