@@ -249,7 +249,7 @@ topFUNDHolders = do
       let richlist =
             take 100 (reverse (sortBy (compare `on` snd) (toList accountMap)))
       let stakelist =
-            map (\(acc, _) -> findWithDefault 0 acc stakeMap) richlist
+            map (\(acc, _) -> findWithDefault 0 acc startingMap) richlist
       let zipped = map stakePercent (zip richlist stakelist)
       return $ zipped
  where
