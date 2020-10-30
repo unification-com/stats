@@ -17,6 +17,7 @@ import           Data.Map                       ( Map
                                                 , insertWith
                                                 , lookup
                                                 , toList
+                                                , unionWith
                                                 )
 import           Data.Time.Clock.POSIX          ( posixSecondsToUTCTime )
 import           GHC.Generics                   ( Generic )
@@ -202,9 +203,17 @@ topFUNDHolders = do
     Nothing -> return []
     Just p  -> do
       let liquidlist = (\(a, b) -> (a, fromIntegral b)) <$> (userAccounts p)
+      let redelegs   = redelegations . staking . app_state $ p
+      let redelegationMap =
+            foldr insertTupleFn empty (map redelegationCollapser redelegs)
+      let unbonds = unbonding_delegations . staking . app_state $ p
+      let unbondingMap =
+            foldr insertTupleFn empty (map unbondingCollapser unbonds)
       let stakeMap =
             foldr insertFn empty (delegations . staking . app_state $ p)
-      let accountMap = foldr anotherFn stakeMap liquidlist
+      let united =
+            unionWith (+) stakeMap (unionWith (+) redelegationMap unbondingMap)
+      let accountMap = foldr anotherFn united liquidlist
       let richlist =
             take 100 (reverse (sortBy (compare `on` snd) (toList accountMap)))
       let stakelist =
@@ -214,9 +223,17 @@ topFUNDHolders = do
  where
   insertFn :: Delegation -> Map String Double -> Map String Double
   insertFn (Delegation a s _) mk = insertWith (+) a s mk
+  insertTupleFn :: (String, Double) -> Map String Double -> Map String Double
+  insertTupleFn (a, v) mk = insertWith (+) a v mk
   anotherFn :: (String, Double) -> Map String Double -> Map String Double
   anotherFn (a, s) mk = insertWith (+) a s mk
   stakePercent ((a, b), c) = (a, b, c / b * 100)
+  redelegationCollapser :: Redelegation -> (String, Double)
+  redelegationCollapser (Redelegation a e) =
+    (a, foldr (\x b -> shares_dst x + b) 0 e)
+  unbondingCollapser :: UnbondingDelegation -> (String, Double)
+  unbondingCollapser (UnbondingDelegation a e) =
+    (a, foldr (\x b -> balance x + b) 0 e)
 
 tableRichlist :: IO String
 tableRichlist = do
